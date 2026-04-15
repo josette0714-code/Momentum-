@@ -159,7 +159,7 @@ function loadTasks() {
 // ─── GOOGLE CALENDAR FETCH ────────────────────────────────────────────────────
 async function fetchEvents(token) {
   const now = new Date();
-  const end = new Date(now.getTime() + 14*24*3600000); // 2 weeks only — fast
+  const end = new Date(now.getTime() + 28*24*3600000); // 4 weeks
   const params = new URLSearchParams({
     timeMin: now.toISOString(),
     timeMax: end.toISOString(),
@@ -474,9 +474,7 @@ function DayGroup({ dateStr, events, tasks }) {
 
 function CalendarView({ events, tasks, onRefresh, refreshing }) {
   const [weekTab, setWeekTab] = useState(0);
-  const thisRange = getWeekRange(0);
-  const nextRange = getWeekRange(1);
-  const range     = weekTab===0 ? thisRange : nextRange;
+  const range    = getWeekRange(weekTab);
   const weekEvs   = filterByWeek(events, weekTab);
 
   // Get all dates in this week as YYYY-MM-DD strings
@@ -548,7 +546,7 @@ function CalendarView({ events, tasks, onRefresh, refreshing }) {
 
         {grouped.length===0 && pendingTasks.length===0 ? (
           <div style={{textAlign:'center',padding:'60px 0',color:'#a8a29e',fontSize:14}}>
-            No events or tasks scheduled for {['this','next','week 3\'s','week 4\'s'][weekTab]} week.
+            No events or tasks scheduled for {["this week","next week","week 3","week 4"][weekTab]}.
           </div>
         ) : (
           <>
