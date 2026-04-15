@@ -157,30 +157,42 @@ function loadTasks() {
 // ─── GOOGLE CALENDAR FETCH ────────────────────────────────────────────────────
 async function fetchEvents(token) {
   const now = new Date();
-  const end = new Date(now.getTime() + 60*24*3600000); // 60 days
+  const end = new Date(now.getTime() + 14*24*3600000); // 2 weeks only — fast
   const params = new URLSearchParams({
     timeMin: now.toISOString(),
     timeMax: end.toISOString(),
     singleEvents: 'true',
     orderBy: 'startTime',
-    maxResults: '100',
+    maxResults: '50',
   });
-  const res = await fetch(CAL_API+'?'+params, {
-    headers: { Authorization: 'Bearer '+token }
-  });
-  if (res.status===401) throw new Error('TOKEN_EXPIRED');
-  if (!res.ok) throw new Error('Calendar API error: '+res.status);
-  const data = await res.json();
-  return (data.items||[]).map(item => ({
-    id:      item.id,
-    title:   item.summary || 'Untitled',
-    start:   item.start?.dateTime || item.start?.date || '',
-    end:     item.end?.dateTime   || item.end?.date   || '',
-    allDay:  !item.start?.dateTime,
-    location:item.location || '',
-    note:    item.location || '',
-    cat:     detectCat(item.summary||''),
-  }));
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
+  try {
+    const res = await fetch(CAL_API+'?'+params, {
+      headers: { Authorization: 'Bearer '+token },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (res.status===401) throw new Error('TOKEN_EXPIRED');
+    if (!res.ok) throw new Error('Calendar API error: '+res.status);
+    const data = await res.json();
+    return (data.items||[]).map(item => ({
+      id:      item.id,
+      title:   item.summary || 'Untitled',
+      start:   item.start?.dateTime || item.start?.date || '',
+      end:     item.end?.dateTime   || item.end?.date   || '',
+      allDay:  !item.start?.dateTime,
+      location:item.location || '',
+      note:    item.location || '',
+      cat:     detectCat(item.summary||''),
+    }));
+  } catch(e) {
+    clearTimeout(timeout);
+    if (e.name==='AbortError') throw new Error('Request timed out — check your connection and try again.');
+    throw e;
+  }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -228,7 +240,7 @@ function SetupScreen({ onSave }) {
     {
       title: 'Open the app & paste your Client ID',
       items: [
-        <>Your app is live at: <a href="https://josette0714-code.github.io/momentum/momentum.html" target="_blank" style={{color:'#0ea5e9',fontWeight:500}}>josette0714-code.github.io/momentum/momentum.html</a></>,
+        <>Your app is live at: <a href="https://josette0714-code.github.io/Momentum/momentum.html" target="_blank" style={{color:'#0ea5e9',fontWeight:500}}>josette0714-code.github.io/Momentum/momentum.html</a></>,
         'Open that link in Safari on your iPhone',
         'Paste your Client ID in the field below, then tap Save & Continue',
         'Tip: Add to Home Screen via Safari Share button for quick access',
@@ -339,33 +351,33 @@ function AuthScreen({ onSignIn, onReset, loading, error }) {
           display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,color:'#fafaf7',
           margin:'0 auto 20px'}}>◈</div>
         <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:32,fontWeight:700,marginBottom:6}}>Momentum</h1>
-        <p style={{fontSize:14,color:'#78716c',marginBottom:32,lineHeight:1.5}}>
-          Your calendar and task manager.<br/>Sign in to load your Google Calendar.
-        </p>
 
-        {error && (
-          <div style={{background:'#fee2e2',border:'1px solid #fca5a5',borderRadius:10,
-            padding:'10px 14px',fontSize:13,color:'#dc2626',marginBottom:16,textAlign:'left'}}>
-            ⚠️ {error}
+        {error ? (
+          <>
+            <div style={{background:'#fee2e2',border:'1px solid #fca5a5',borderRadius:10,
+              padding:'10px 14px',fontSize:13,color:'#dc2626',marginBottom:20,textAlign:'left'}}>
+              ⚠️ {error}
+            </div>
+            <button onClick={onSignIn} style={{
+              display:'flex',alignItems:'center',justifyContent:'center',gap:10,
+              width:'100%',padding:'13px 20px',borderRadius:12,border:'1px solid #ede9e3',
+              background:'#fff',fontSize:14,fontWeight:500,cursor:'pointer',
+              boxShadow:'0 1px 4px rgba(0,0,0,.08)',marginBottom:12,
+            }}>
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="G"/>
+              <span>Sign in with Google</span>
+            </button>
+          </>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,marginTop:20}}>
+            <div className="spinner" style={{width:28,height:28,borderWidth:'3px'}}/>
+            <p style={{fontSize:14,color:'#78716c'}}>Signing you in…</p>
           </div>
         )}
 
-        <button onClick={onSignIn} disabled={loading} style={{
-          display:'flex',alignItems:'center',justifyContent:'center',gap:10,
-          width:'100%',padding:'13px 20px',borderRadius:12,border:'1px solid #ede9e3',
-          background:'#fff',fontSize:14,fontWeight:500,cursor:loading?'default':'pointer',
-          boxShadow:'0 1px 4px rgba(0,0,0,.08)',marginBottom:12,transition:'box-shadow .15s',
-        }}>
-          {loading
-            ? <><div className="spinner"/><span>Connecting…</span></>
-            : <><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="G"/>
-                <span>Sign in with Google</span></>
-          }
-        </button>
-
         <button onClick={onReset} style={{
           fontSize:12,color:'#a8a29e',background:'none',border:'none',cursor:'pointer',
-          textDecoration:'underline',
+          textDecoration:'underline',marginTop:20,display:'block',margin:'20px auto 0',
         }}>Change Client ID</button>
       </div>
     </div>
@@ -758,8 +770,21 @@ function TaskSidebar({ tasks, activeList, setActiveList }) {
 // ═════════════════════════════════════════════════════════════════════════════
 // ROOT APP
 // ═════════════════════════════════════════════════════════════════════════════
+// ── Robust storage: localStorage + sessionStorage + cookie fallbacks ──────────
+function saveClientIdStorage(id) {
+  try { localStorage.setItem('momentum_client_id', id); } catch(e) {}
+  try { sessionStorage.setItem('momentum_client_id', id); } catch(e) {}
+  try { document.cookie = 'momentum_cid='+encodeURIComponent(id)+';max-age=31536000;path=/;SameSite=Lax'; } catch(e) {}
+}
+function loadClientIdStorage() {
+  try { const v=localStorage.getItem('momentum_client_id'); if(v) return v; } catch(e) {}
+  try { const v=sessionStorage.getItem('momentum_client_id'); if(v) return v; } catch(e) {}
+  try { const m=document.cookie.match(/momentum_cid=([^;]+)/); if(m) return decodeURIComponent(m[1]); } catch(e) {}
+  return '';
+}
+
 function App() {
-  const savedId = () => localStorage.getItem('momentum_client_id') || '';
+  const savedId = loadClientIdStorage;
 
   const [screen,     setScreen]     = useState(savedId() ? 'auth' : 'setup');
   const [clientId,   setClientId]   = useState(savedId);
@@ -774,7 +799,7 @@ function App() {
   const tokenClientRef = useRef(null);
   const accessTokenRef = useRef(null);
 
-  // Init Google token client whenever we're on auth or app screen
+  // Init Google token client and auto-trigger sign-in immediately
   useEffect(() => {
     if (screen !== 'auth' && screen !== 'app') return;
     const tryInit = () => {
@@ -784,6 +809,11 @@ function App() {
         scope: SCOPE,
         callback: handleTokenResponse,
       });
+      // Auto-trigger sign-in immediately — no button tap needed
+      if (screen === 'auth') {
+        setLoading(true);
+        tokenClientRef.current.requestAccessToken({ prompt: '' });
+      }
       return true;
     };
     if (!tryInit()) {
@@ -822,18 +852,21 @@ function App() {
     } catch(e) {
       if (e.message==='TOKEN_EXPIRED') signIn();
       else setError(e.message);
+    } finally {
       setRefreshing(false);
     }
   }
 
   function saveClientId(id) {
-    localStorage.setItem('momentum_client_id', id);
+    saveClientIdStorage(id);
     setClientId(id);
     setScreen('auth');
   }
 
   function resetClientId() {
-    localStorage.removeItem('momentum_client_id');
+    try { localStorage.removeItem('momentum_client_id'); } catch(e) {}
+    try { sessionStorage.removeItem('momentum_client_id'); } catch(e) {}
+    try { document.cookie = 'momentum_cid=;max-age=0;path=/'; } catch(e) {}
     accessTokenRef.current = null;
     setClientId('');
     setScreen('setup');
