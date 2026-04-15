@@ -43,6 +43,182 @@ border-top-color:#1c1917; border-radius:50%; animation:spin .7s linear infinite;
 <body>
 <div id="root"></div>
 
+<script>
+// ═════════════════════════════════════════════════════════════════════════════
+// PRINT / EXPORT
+// ═════════════════════════════════════════════════════════════════════════════
+function generatePrint(events, tasks) {
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+  // Group events by date
+  const grouped = groupByDate(events);
+
+  // Group tasks by list
+  const tasksByList = LISTS.map(list => ({
+    ...list,
+    pending:   tasks.filter(t => t.list === list.id && !t.done),
+    completed: tasks.filter(t => t.list === list.id && t.done),
+  }));
+
+  const eventsHTML = grouped.length === 0
+    ? '<p style="color:#888;font-style:italic">No upcoming events.</p>'
+    : grouped.map(([d, evs]) => `
+        <div class="day-block">
+          <div class="day-heading">${fmtDayFull(d)}${isToday(d) ? ' <span class="today-badge">Today</span>' : ''}</div>
+          ${evs.map(ev => {
+            const c = CAT[ev.cat] || CAT.personal;
+            const time = ev.allDay ? 'All day' : (fmtTime(ev.start) + (fmtTime(ev.end) ? ' → ' + fmtTime(ev.end) : ''));
+            return `
+              <div class="event-row">
+                <div class="event-cat" style="background:${c.color}"></div>
+                <div class="event-body">
+                  <div class="event-title">${ev.title}</div>
+                  ${ev.location ? `<div class="event-meta">📍 ${ev.location}</div>` : ''}
+                </div>
+                <div class="event-time">${time}</div>
+              </div>`;
+          }).join('')}
+        </div>`
+    ).join('');
+
+  const tasksHTML = tasksByList.map(list => {
+    if (list.pending.length === 0 && list.completed.length === 0) return '';
+    return `
+      <div class="list-block">
+        <div class="list-heading" style="border-left:4px solid ${list.color}">
+          ${list.icon} ${list.label}
+          <span class="list-count">${list.pending.length} pending · ${list.completed.length} done</span>
+        </div>
+        ${list.pending.map(t => `
+          <div class="task-row">
+            <div class="task-check">○</div>
+            <div class="task-body">
+              <div class="task-title">${t.title}</div>
+              ${t.due ? `<div class="task-due">Due ${new Date(t.due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div>` : ''}
+            </div>
+          </div>`).join('')}
+        ${list.completed.length > 0 ? `
+          <div class="completed-heading">Completed</div>
+          ${list.completed.map(t => `
+            <div class="task-row done">
+              <div class="task-check">✓</div>
+              <div class="task-body">
+                <div class="task-title">${t.title}</div>
+              </div>
+            </div>`).join('')}
+        ` : ''}
+      </div>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Momentum — ${dateStr}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Outfit', sans-serif; color: #1c1917; background: #fff; padding: 32px 40px; max-width: 800px; margin: 0 auto; }
+
+  /* Header */
+  .print-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 2px solid #1c1917; margin-bottom: 32px; }
+  .print-logo   { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: #1c1917; }
+  .print-date   { font-size: 13px; color: #78716c; }
+
+  /* Section headings */
+  .section-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: #1c1917; margin-bottom: 16px; padding-bottom: 6px; border-bottom: 1px solid #ede9e3; }
+  .section       { margin-bottom: 36px; }
+
+  /* Events */
+  .day-block   { margin-bottom: 20px; }
+  .day-heading { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #78716c; margin-bottom: 8px; }
+  .today-badge { background: #0ea5e9; color: #fff; border-radius: 4px; padding: 1px 6px; font-size: 10px; vertical-align: middle; }
+  .event-row   { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #ede9e3; border-radius: 8px; margin-bottom: 6px; background: #fafaf7; }
+  .event-cat   { width: 4px; min-width: 4px; height: 32px; border-radius: 2px; flex-shrink: 0; }
+  .event-body  { flex: 1; min-width: 0; }
+  .event-title { font-size: 14px; font-weight: 500; color: #1c1917; }
+  .event-meta  { font-size: 11px; color: #78716c; margin-top: 2px; }
+  .event-time  { font-size: 12px; color: #78716c; flex-shrink: 0; text-align: right; }
+
+  /* Tasks */
+  .list-block        { margin-bottom: 22px; }
+  .list-heading      { font-size: 15px; font-weight: 600; color: #1c1917; padding: 6px 10px; background: #f5f3ee; border-radius: 0 8px 8px 0; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+  .list-count        { font-size: 11px; color: #78716c; font-weight: 400; }
+  .task-row          { display: flex; align-items: flex-start; gap: 10px; padding: 7px 10px; border-bottom: 1px solid #f5f3ee; }
+  .task-row.done     { opacity: 0.5; }
+  .task-check        { font-size: 14px; color: #a8a29e; flex-shrink: 0; width: 18px; }
+  .task-body         { flex: 1; }
+  .task-title        { font-size: 14px; color: #1c1917; }
+  .task-row.done .task-title { text-decoration: line-through; }
+  .task-due          { font-size: 11px; color: #f59e0b; margin-top: 2px; }
+  .completed-heading { font-size: 11px; color: #a8a29e; text-transform: uppercase; letter-spacing: .6px; margin: 10px 0 6px; padding-left: 10px; }
+
+  /* Footer */
+  .print-footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ede9e3; font-size: 11px; color: #a8a29e; text-align: center; }
+
+  /* Print styles */
+  @media print {
+    body { padding: 16px 24px; }
+    .no-print { display: none !important; }
+    .day-block, .list-block { break-inside: avoid; }
+    .section { break-inside: avoid; }
+  }
+</style>
+
+</head>
+<body>
+
+<div class="print-header">
+  <div class="print-logo">◈ Momentum</div>
+  <div class="print-date">Exported ${dateStr}</div>
+</div>
+
+<div class="no-print" style="margin-bottom:24px;display:flex;gap:10px;">
+  <button onclick="window.print()" style="padding:10px 22px;background:#1c1917;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:500;">🖨️ Print / Save as PDF</button>
+  <button onclick="window.close()" style="padding:10px 18px;background:#f5f3ee;color:#78716c;border:1px solid #ede9e3;border-radius:8px;font-size:14px;cursor:pointer;font-family:'Outfit',sans-serif;">Close</button>
+</div>
+
+<div class="section">
+  <div class="section-title">📅 Upcoming Events</div>
+  ${eventsHTML}
+</div>
+
+<div class="section">
+  <div class="section-title">✓ Tasks</div>
+  ${tasksHTML || '<p style="color:#888;font-style:italic">No tasks yet.</p>'}
+</div>
+
+<div class="print-footer">Generated by Momentum · ${dateStr}</div>
+
+</body>
+</html>`;
+
+const win = window.open(’’, ‘_blank’);
+if (win) {
+win.document.write(html);
+win.document.close();
+} else {
+alert(‘Please allow pop-ups for this site to use the export feature.’);
+}
+}
+// ── Robust storage: localStorage + sessionStorage + cookie fallbacks ──────────
+function saveClientIdStorage(id) {
+try { localStorage.setItem(‘momentum_client_id’, id); } catch(e) {}
+try { sessionStorage.setItem(‘momentum_client_id’, id); } catch(e) {}
+try { document.cookie = ‘momentum_cid=’+encodeURIComponent(id)+’;max-age=31536000;path=/;SameSite=Lax’; } catch(e) {}
+}
+function loadClientIdStorage() {
+try { const v=localStorage.getItem(‘momentum_client_id’); if(v) return v; } catch(e) {}
+try { const v=sessionStorage.getItem(‘momentum_client_id’); if(v) return v; } catch(e) {}
+try { const m=document.cookie.match(/momentum_cid=([^;]+)/); if(m) return decodeURIComponent(m[1]); } catch(e) {}
+return ‘’;
+}
+
+</script>
+</script>
+
 <script type="text/babel">
 const { useState, useReducer, useRef, useEffect, useCallback } = React;
 
@@ -890,339 +1066,166 @@ function TaskSidebar({ tasks, activeList, setActiveList }) {
   );
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// PRINT / EXPORT
-// ═════════════════════════════════════════════════════════════════════════════
-function generatePrint(events, tasks) {
-  const now     = new Date();
-  const dateStr = now.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
-  // Group events by date
-  const grouped = groupByDate(events);
-
-  // Group tasks by list
-  const tasksByList = LISTS.map(list => ({
-    ...list,
-    pending:   tasks.filter(t => t.list === list.id && !t.done),
-    completed: tasks.filter(t => t.list === list.id && t.done),
-  }));
-
-  const eventsHTML = grouped.length === 0
-    ? '<p style="color:#888;font-style:italic">No upcoming events.</p>'
-    : grouped.map(([d, evs]) => `
-        <div class="day-block">
-          <div class="day-heading">${fmtDayFull(d)}${isToday(d) ? ' <span class="today-badge">Today</span>' : ''}</div>
-          ${evs.map(ev => {
-            const c = CAT[ev.cat] || CAT.personal;
-            const time = ev.allDay ? 'All day' : (fmtTime(ev.start) + (fmtTime(ev.end) ? ' → ' + fmtTime(ev.end) : ''));
-            return `
-              <div class="event-row">
-                <div class="event-cat" style="background:${c.color}"></div>
-                <div class="event-body">
-                  <div class="event-title">${ev.title}</div>
-                  ${ev.location ? `<div class="event-meta">📍 ${ev.location}</div>` : ''}
-                </div>
-                <div class="event-time">${time}</div>
-              </div>`;
-          }).join('')}
-        </div>`
-    ).join('');
-
-  const tasksHTML = tasksByList.map(list => {
-    if (list.pending.length === 0 && list.completed.length === 0) return '';
-    return `
-      <div class="list-block">
-        <div class="list-heading" style="border-left:4px solid ${list.color}">
-          ${list.icon} ${list.label}
-          <span class="list-count">${list.pending.length} pending · ${list.completed.length} done</span>
-        </div>
-        ${list.pending.map(t => `
-          <div class="task-row">
-            <div class="task-check">○</div>
-            <div class="task-body">
-              <div class="task-title">${t.title}</div>
-              ${t.due ? `<div class="task-due">Due ${new Date(t.due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div>` : ''}
-            </div>
-          </div>`).join('')}
-        ${list.completed.length > 0 ? `
-          <div class="completed-heading">Completed</div>
-          ${list.completed.map(t => `
-            <div class="task-row done">
-              <div class="task-check">✓</div>
-              <div class="task-body">
-                <div class="task-title">${t.title}</div>
-              </div>
-            </div>`).join('')}
-        ` : ''}
-      </div>`;
-  }).join('');
-
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Momentum — ${dateStr}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Outfit', sans-serif; color: #1c1917; background: #fff; padding: 32px 40px; max-width: 800px; margin: 0 auto; }
-
-  /* Header */
-  .print-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 2px solid #1c1917; margin-bottom: 32px; }
-  .print-logo   { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 700; color: #1c1917; }
-  .print-date   { font-size: 13px; color: #78716c; }
-
-  /* Section headings */
-  .section-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 700; color: #1c1917; margin-bottom: 16px; padding-bottom: 6px; border-bottom: 1px solid #ede9e3; }
-  .section       { margin-bottom: 36px; }
-
-  /* Events */
-  .day-block   { margin-bottom: 20px; }
-  .day-heading { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #78716c; margin-bottom: 8px; }
-  .today-badge { background: #0ea5e9; color: #fff; border-radius: 4px; padding: 1px 6px; font-size: 10px; vertical-align: middle; }
-  .event-row   { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #ede9e3; border-radius: 8px; margin-bottom: 6px; background: #fafaf7; }
-  .event-cat   { width: 4px; min-width: 4px; height: 32px; border-radius: 2px; flex-shrink: 0; }
-  .event-body  { flex: 1; min-width: 0; }
-  .event-title { font-size: 14px; font-weight: 500; color: #1c1917; }
-  .event-meta  { font-size: 11px; color: #78716c; margin-top: 2px; }
-  .event-time  { font-size: 12px; color: #78716c; flex-shrink: 0; text-align: right; }
-
-  /* Tasks */
-  .list-block        { margin-bottom: 22px; }
-  .list-heading      { font-size: 15px; font-weight: 600; color: #1c1917; padding: 6px 10px; background: #f5f3ee; border-radius: 0 8px 8px 0; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
-  .list-count        { font-size: 11px; color: #78716c; font-weight: 400; }
-  .task-row          { display: flex; align-items: flex-start; gap: 10px; padding: 7px 10px; border-bottom: 1px solid #f5f3ee; }
-  .task-row.done     { opacity: 0.5; }
-  .task-check        { font-size: 14px; color: #a8a29e; flex-shrink: 0; width: 18px; }
-  .task-body         { flex: 1; }
-  .task-title        { font-size: 14px; color: #1c1917; }
-  .task-row.done .task-title { text-decoration: line-through; }
-  .task-due          { font-size: 11px; color: #f59e0b; margin-top: 2px; }
-  .completed-heading { font-size: 11px; color: #a8a29e; text-transform: uppercase; letter-spacing: .6px; margin: 10px 0 6px; padding-left: 10px; }
-
-  /* Footer */
-  .print-footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #ede9e3; font-size: 11px; color: #a8a29e; text-align: center; }
-
-  /* Print styles */
-  @media print {
-    body { padding: 16px 24px; }
-    .no-print { display: none !important; }
-    .day-block, .list-block { break-inside: avoid; }
-    .section { break-inside: avoid; }
-  }
-</style>
-
-</head>
-<body>
-
-<div class="print-header">
-  <div class="print-logo">◈ Momentum</div>
-  <div class="print-date">Exported ${dateStr}</div>
-</div>
-
-<div class="no-print" style="margin-bottom:24px;display:flex;gap:10px;">
-  <button onclick="window.print()" style="padding:10px 22px;background:#1c1917;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:500;">🖨️ Print / Save as PDF</button>
-  <button onclick="window.close()" style="padding:10px 18px;background:#f5f3ee;color:#78716c;border:1px solid #ede9e3;border-radius:8px;font-size:14px;cursor:pointer;font-family:'Outfit',sans-serif;">Close</button>
-</div>
-
-<div class="section">
-  <div class="section-title">📅 Upcoming Events</div>
-  ${eventsHTML}
-</div>
-
-<div class="section">
-  <div class="section-title">✓ Tasks</div>
-  ${tasksHTML || '<p style="color:#888;font-style:italic">No tasks yet.</p>'}
-</div>
-
-<div class="print-footer">Generated by Momentum · ${dateStr}</div>
-
-</body>
-</html>`;
-
-const win = window.open(’’, ‘_blank’);
-if (win) {
-win.document.write(html);
-win.document.close();
-} else {
-alert(‘Please allow pop-ups for this site to use the export feature.’);
-}
-}
-// ── Robust storage: localStorage + sessionStorage + cookie fallbacks ──────────
-function saveClientIdStorage(id) {
-try { localStorage.setItem(‘momentum_client_id’, id); } catch(e) {}
-try { sessionStorage.setItem(‘momentum_client_id’, id); } catch(e) {}
-try { document.cookie = ‘momentum_cid=’+encodeURIComponent(id)+’;max-age=31536000;path=/;SameSite=Lax’; } catch(e) {}
-}
-function loadClientIdStorage() {
-try { const v=localStorage.getItem(‘momentum_client_id’); if(v) return v; } catch(e) {}
-try { const v=sessionStorage.getItem(‘momentum_client_id’); if(v) return v; } catch(e) {}
-try { const m=document.cookie.match(/momentum_cid=([^;]+)/); if(m) return decodeURIComponent(m[1]); } catch(e) {}
-return ‘’;
-}
 
 function App() {
-const savedId = loadClientIdStorage;
+  const savedId = loadClientIdStorage;
 
-const [screen,     setScreen]     = useState(savedId() ? ‘auth’ : ‘setup’);
-const [clientId,   setClientId]   = useState(savedId);
-const [events,     setEvents]     = useState([]);
-const [loading,    setLoading]    = useState(false);
-const [refreshing, setRefreshing] = useState(false);
-const [error,      setError]      = useState(’’);
-const [tab,        setTab]        = useState(‘calendar’);
-const [activeList, setActiveList] = useState(‘personal’);
-const [tasks,      dispatch]      = useReducer(taskReducer, null, loadTasks);
+  const [screen,     setScreen]     = useState(savedId() ? 'auth' : 'setup');
+  const [clientId,   setClientId]   = useState(savedId);
+  const [events,     setEvents]     = useState([]);
+  const [loading,    setLoading]    = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error,      setError]      = useState('');
+  const [tab,        setTab]        = useState('calendar');
+  const [activeList, setActiveList] = useState('personal');
+  const [tasks,      dispatch]      = useReducer(taskReducer, null, loadTasks);
 
-const tokenClientRef = useRef(null);
-const accessTokenRef = useRef(null);
+  const tokenClientRef = useRef(null);
+  const accessTokenRef = useRef(null);
 
-// Init Google token client and auto-trigger sign-in immediately
-useEffect(() => {
-if (screen !== ‘auth’ && screen !== ‘app’) return;
-const tryInit = () => {
-if (!window.google?.accounts?.oauth2) return false;
-tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-client_id: clientId,
-scope: SCOPE,
-callback: handleTokenResponse,
-});
-// Auto-trigger sign-in immediately — no button tap needed
-if (screen === ‘auth’) {
-setLoading(true);
-tokenClientRef.current.requestAccessToken({ prompt: ‘’ });
-}
-return true;
-};
-if (!tryInit()) {
-const iv = setInterval(() => { if (tryInit()) clearInterval(iv); }, 200);
-return () => clearInterval(iv);
-}
-}, [screen, clientId]);
+  // Init Google token client and auto-trigger sign-in immediately
+  useEffect(() => {
+    if (screen !== 'auth' && screen !== 'app') return;
+    const tryInit = () => {
+      if (!window.google?.accounts?.oauth2) return false;
+      tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPE,
+        callback: handleTokenResponse,
+      });
+      // Auto-trigger sign-in immediately — no button tap needed
+      if (screen === 'auth') {
+        setLoading(true);
+        tokenClientRef.current.requestAccessToken({ prompt: '' });
+      }
+      return true;
+    };
+    if (!tryInit()) {
+      const iv = setInterval(() => { if (tryInit()) clearInterval(iv); }, 200);
+      return () => clearInterval(iv);
+    }
+  }, [screen, clientId]);
 
-async function handleTokenResponse(response) {
-if (response.error) {
-setError(‘Sign-in error: ‘+response.error);
-setLoading(false);
-setRefreshing(false);
-return;
-}
-accessTokenRef.current = response.access_token;
-try {
-const evs = await fetchEvents(response.access_token);
-setEvents(evs);
-setScreen(‘app’);
-setError(’’);
-} catch(e) {
-setError(e.message===‘TOKEN_EXPIRED’ ? ‘Session expired — please reload.’ : e.message);
-} finally {
-setLoading(false);
-setRefreshing(false);
-}
-}
+  async function handleTokenResponse(response) {
+    if (response.error) {
+      setError('Sign-in error: '+response.error);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+    accessTokenRef.current = response.access_token;
+    try {
+      const evs = await fetchEvents(response.access_token);
+      setEvents(evs);
+      setScreen('app');
+      setError('');
+    } catch(e) {
+      setError(e.message==='TOKEN_EXPIRED' ? 'Session expired — please reload.' : e.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
 
-function signIn() {
-setLoading(true); setError(’’);
-if (tokenClientRef.current) tokenClientRef.current.requestAccessToken({ prompt: ‘’ });
-else { setError(‘Google auth not ready yet. Please wait a moment and try again.’); setLoading(false); }
-}
+  function signIn() {
+    setLoading(true); setError('');
+    if (tokenClientRef.current) tokenClientRef.current.requestAccessToken({ prompt: '' });
+    else { setError('Google auth not ready yet. Please wait a moment and try again.'); setLoading(false); }
+  }
 
-async function refresh() {
-setRefreshing(true); setError(’’);
-// Always request a fresh token — never reuse stored one
-if (tokenClientRef.current) {
-tokenClientRef.current.requestAccessToken({ prompt: ‘’ });
-// handleTokenResponse will set refreshing to false when done
-} else {
-setError(‘Auth not ready. Please reload the page.’);
-setRefreshing(false);
-}
-}
+  async function refresh() {
+    setRefreshing(true); setError('');
+    // Always request a fresh token — never reuse stored one
+    if (tokenClientRef.current) {
+      tokenClientRef.current.requestAccessToken({ prompt: '' });
+      // handleTokenResponse will set refreshing to false when done
+    } else {
+      setError('Auth not ready. Please reload the page.');
+      setRefreshing(false);
+    }
+  }
 
-function saveClientId(id) {
-saveClientIdStorage(id);
-setClientId(id);
-setScreen(‘auth’);
-}
+  function saveClientId(id) {
+    saveClientIdStorage(id);
+    setClientId(id);
+    setScreen('auth');
+  }
 
-function resetClientId() {
-try { localStorage.removeItem(‘momentum_client_id’); } catch(e) {}
-try { sessionStorage.removeItem(‘momentum_client_id’); } catch(e) {}
-try { document.cookie = ‘momentum_cid=;max-age=0;path=/’; } catch(e) {}
-accessTokenRef.current = null;
-setClientId(’’);
-setScreen(‘setup’);
-}
+  function resetClientId() {
+    try { localStorage.removeItem('momentum_client_id'); } catch(e) {}
+    try { sessionStorage.removeItem('momentum_client_id'); } catch(e) {}
+    try { document.cookie = 'momentum_cid=;max-age=0;path=/'; } catch(e) {}
+    accessTokenRef.current = null;
+    setClientId('');
+    setScreen('setup');
+  }
 
-// ── Screens ──
-if (screen===‘setup’) return <SetupScreen onSave={saveClientId}/>;
-if (screen===‘auth’)  return <AuthScreen onSignIn={signIn} onReset={resetClientId} loading={loading} error={error}/>;
+  // ── Screens ──
+  if (screen==='setup') return <SetupScreen onSave={saveClientId}/>;
+  if (screen==='auth')  return <AuthScreen onSignIn={signIn} onReset={resetClientId} loading={loading} error={error}/>;
 
-// ── Main App ──
-return (
-<div style={{minHeight:‘100vh’,background:’#f5f3ee’}}>
-{/* Header */}
-<div style={{background:’#fff’,borderBottom:‘1px solid #ede9e3’,
-padding:‘0 32px’,height:58,
-display:‘flex’,alignItems:‘center’,justifyContent:‘space-between’,
-position:‘sticky’,top:0,zIndex:10}}>
+  // ── Main App ──
+  return (
+    <div style={{minHeight:'100vh',background:'#f5f3ee'}}>
+      {/* Header */}
+      <div style={{background:'#fff',borderBottom:'1px solid #ede9e3',
+        padding:'0 32px',height:58,
+        display:'flex',alignItems:'center',justifyContent:'space-between',
+        position:'sticky',top:0,zIndex:10}}>
 
-```
-    <div style={{display:'flex',alignItems:'center',gap:14}}>
-      <div style={{width:32,height:32,borderRadius:9,
-        background:'linear-gradient(135deg,#1c1917,#44403c)',
-        display:'flex',alignItems:'center',justifyContent:'center',
-        fontSize:15,color:'#fafaf7'}}>◈</div>
-      <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:700,color:'#1c1917'}}>
-        Momentum
-      </span>
-      <div style={{display:'flex',gap:2,marginLeft:14,background:'#f5f3ee',borderRadius:9,padding:3}}>
-        {[['calendar','📅  Calendar'],['tasks','✓  Tasks']].map(([k,l]) => (
-          <button key={k} onClick={()=>setTab(k)} style={{
-            padding:'5px 16px',borderRadius:7,fontSize:13,fontWeight:500,border:'none',cursor:'pointer',
-            background:tab===k?'#fff':'transparent',
-            color:tab===k?'#1c1917':'#78716c',
-            boxShadow:tab===k?'0 1px 4px rgba(0,0,0,.08)':'none',
-            transition:'all .15s',
-          }}>{l}</button>
-        ))}
-      </div>
-    </div>
+        <div style={{display:'flex',alignItems:'center',gap:14}}>
+          <div style={{width:32,height:32,borderRadius:9,
+            background:'linear-gradient(135deg,#1c1917,#44403c)',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            fontSize:15,color:'#fafaf7'}}>◈</div>
+          <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:700,color:'#1c1917'}}>
+            Momentum
+          </span>
+          <div style={{display:'flex',gap:2,marginLeft:14,background:'#f5f3ee',borderRadius:9,padding:3}}>
+            {[['calendar','📅  Calendar'],['tasks','✓  Tasks']].map(([k,l]) => (
+              <button key={k} onClick={()=>setTab(k)} style={{
+                padding:'5px 16px',borderRadius:7,fontSize:13,fontWeight:500,border:'none',cursor:'pointer',
+                background:tab===k?'#fff':'transparent',
+                color:tab===k?'#1c1917':'#78716c',
+                boxShadow:tab===k?'0 1px 4px rgba(0,0,0,.08)':'none',
+                transition:'all .15s',
+              }}>{l}</button>
+            ))}
+          </div>
+        </div>
 
-    <div style={{display:'flex',alignItems:'center',gap:12}}>
-      <button onClick={()=>generatePrint(events, tasks)} style={{
-        display:'flex',alignItems:'center',gap:6,
-        padding:'6px 14px',borderRadius:20,border:'1px solid #ede9e3',
-        background:'#fff',color:'#78716c',fontSize:12,fontWeight:500,cursor:'pointer',
-      }}>🖨️ Export</button>
-      <button onClick={resetClientId} style={{
-        fontSize:11,color:'#a8a29e',background:'none',border:'none',cursor:'pointer',
-        textDecoration:'underline',
-      }}>Sign out</button>
-    </div>
-  </div>
-
-  {/* Body */}
-  <div style={{maxWidth:1160,margin:'0 auto',padding:'30px 32px'}}>
-    {tab==='calendar' ? (
-      <CalendarView events={events} tasks={tasks} onRefresh={refresh} refreshing={refreshing}/>
-    ) : (
-      <div style={{display:'grid',gridTemplateColumns:'1fr 280px',gap:26,alignItems:'start'}}>
-        <TaskPane listId={activeList} tasks={tasks} dispatch={dispatch}/>
-        <div style={{position:'sticky',top:76}}>
-          <TaskSidebar tasks={tasks} activeList={activeList} setActiveList={setActiveList}/>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <button onClick={()=>generatePrint(events, tasks)} style={{
+            display:'flex',alignItems:'center',gap:6,
+            padding:'6px 14px',borderRadius:20,border:'1px solid #ede9e3',
+            background:'#fff',color:'#78716c',fontSize:12,fontWeight:500,cursor:'pointer',
+          }}>🖨️ Export</button>
+          <button onClick={resetClientId} style={{
+            fontSize:11,color:'#a8a29e',background:'none',border:'none',cursor:'pointer',
+            textDecoration:'underline',
+          }}>Sign out</button>
         </div>
       </div>
-    )}
-  </div>
-</div>
-```
 
-);
+      {/* Body */}
+      <div style={{maxWidth:1160,margin:'0 auto',padding:'30px 32px'}}>
+        {tab==='calendar' ? (
+          <CalendarView events={events} tasks={tasks} onRefresh={refresh} refreshing={refreshing}/>
+        ) : (
+          <div style={{display:'grid',gridTemplateColumns:'1fr 280px',gap:26,alignItems:'start'}}>
+            <TaskPane listId={activeList} tasks={tasks} dispatch={dispatch}/>
+            <div style={{position:'sticky',top:76}}>
+              <TaskSidebar tasks={tasks} activeList={activeList} setActiveList={setActiveList}/>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
-ReactDOM.createRoot(document.getElementById(‘root’)).render(<App/>);
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 
 </body>
