@@ -467,14 +467,17 @@ function CalendarView({ events, onRefresh, refreshing }) {
                 {fmtShort(range.start)} – {fmtShort(range.end)}
               </span>
             </h1>
-            <button onClick={onRefresh} disabled={refreshing} style={{
-              display:'flex',alignItems:'center',gap:6,
-              padding:'6px 14px',borderRadius:20,border:'1px solid #ede9e3',
-              background:'#fff',color:'#78716c',fontSize:12,cursor:'pointer',
-            }}>
-              {refreshing ? <div className="spinner" style={{width:14,height:14,borderWidth:'2px'}}/> : '🔄'}
-              {refreshing ? 'Refreshing…' : 'Refresh'}
-            </button>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              {refreshing && <span style={{fontSize:12,color:'#a8a29e'}}>Getting fresh token…</span>}
+              <button onClick={onRefresh} disabled={refreshing} style={{
+                display:'flex',alignItems:'center',gap:6,
+                padding:'6px 14px',borderRadius:20,border:'1px solid #ede9e3',
+                background:refreshing?'#f5f3ee':'#fff',color:'#78716c',fontSize:12,cursor:'pointer',
+              }}>
+                {refreshing ? <div className="spinner" style={{width:14,height:14,borderWidth:'2px'}}/> : '🔄'}
+                {refreshing ? 'Refreshing…' : 'Refresh'}
+              </button>
+            </div>
           </div>
           <div style={{display:'flex',gap:4,background:'#ede9e3',borderRadius:10,padding:3,width:'fit-content'}}>
             {[['This Week',0],['Next Week',1]].map(([l,v]) => (
@@ -823,7 +826,12 @@ function App() {
   }, [screen, clientId]);
 
   async function handleTokenResponse(response) {
-    if (response.error) { setError('Sign-in error: '+response.error); setLoading(false); return; }
+    if (response.error) {
+      setError('Sign-in error: '+response.error);
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     accessTokenRef.current = response.access_token;
     try {
       const evs = await fetchEvents(response.access_token);
@@ -831,10 +839,11 @@ function App() {
       setScreen('app');
       setError('');
     } catch(e) {
-      setError(e.message==='TOKEN_EXPIRED' ? 'Session expired — please sign in again.' : e.message);
+      setError(e.message==='TOKEN_EXPIRED' ? 'Session expired — please reload.' : e.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    setLoading(false);
-    setRefreshing(false);
   }
 
   function signIn() {
@@ -844,15 +853,13 @@ function App() {
   }
 
   async function refresh() {
-    if (!accessTokenRef.current) { signIn(); return; }
     setRefreshing(true); setError('');
-    try {
-      const evs = await fetchEvents(accessTokenRef.current);
-      setEvents(evs);
-    } catch(e) {
-      if (e.message==='TOKEN_EXPIRED') signIn();
-      else setError(e.message);
-    } finally {
+    // Always request a fresh token — never reuse stored one
+    if (tokenClientRef.current) {
+      tokenClientRef.current.requestAccessToken({ prompt: '' });
+      // handleTokenResponse will set refreshing to false when done
+    } else {
+      setError('Auth not ready. Please reload the page.');
       setRefreshing(false);
     }
   }
