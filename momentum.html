@@ -132,9 +132,15 @@ input:focus,textarea:focus{outline:none}
   <div class="auth-box">
     <h1>Momentum</h1>
     <div id="auth-error" class="err-box" style="display:none"></div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:20px">
+    <div id="auth-waiting" style="display:none;flex-direction:column;align-items:center;gap:10px;margin-top:20px">
       <span class="spinner"></span>
       <p style="font-size:13px;color:#78716c">Signing you in...</p>
+    </div>
+    <div id="auth-btn-wrap" style="margin-top:24px">
+      <button onclick="doSignIn()" id="signin-btn" style="width:100%;padding:12px;border-radius:10px;border:none;background:#1c1917;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif">
+        Sign in with Google
+      </button>
+      <p style="font-size:12px;color:#78716c;margin-top:10px;text-align:center">Tap the button to connect your Google Calendar</p>
     </div>
     <button onclick="doReset()" style="margin-top:18px;font-size:11px;color:#a8a29e;background:none;border:none;cursor:pointer;text-decoration:underline">Change Client ID</button>
   </div>
@@ -396,7 +402,20 @@ function tryInitGoogle(){
     scope:SCOPE,
     callback:handleToken,
   });
-  tokenClient.requestAccessToken({prompt:''});
+  // Ready - show the sign in button
+  document.getElementById('signin-btn').disabled=false;
+}
+
+function doSignIn(){
+  if(!tokenClient){
+    document.getElementById('auth-error').textContent='Still loading, please wait a moment and try again.';
+    document.getElementById('auth-error').style.display='block';
+    return;
+  }
+  document.getElementById('auth-btn-wrap').style.display='none';
+  document.getElementById('auth-waiting').style.display='flex';
+  // prompt:'select_account' opens explicit popup - works on iOS Safari
+  tokenClient.requestAccessToken({prompt:'select_account'});
 }
 
 function handleToken(resp){
@@ -411,7 +430,7 @@ function handleToken(resp){
 }
 
 function doRefresh(){
-  if(tokenClient){tokenClient.requestAccessToken({prompt:''});}
+  if(tokenClient){tokenClient.requestAccessToken({prompt:'select_account'});}
 }
 
 function doReset(){
