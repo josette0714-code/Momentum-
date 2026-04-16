@@ -175,6 +175,7 @@ function initGoogle(){
     callback:function(r){
       if(r.error){showBanner('Sign-in error: '+r.error,false);return;}
       S.token=r.access_token;
+      S.tokenExp=Date.now()+3500000; // ~58 min
       fetchCal();
     }
   });
@@ -183,6 +184,13 @@ function initGoogle(){
 function doRefresh(){
   if(!TC){showBanner('Auth loading, try again in a moment',false);return;}
   document.getElementById('rbtn').disabled=true;
+  // If token still valid (<58 min old) — refresh silently, no account picker
+  if(S.token&&S.tokenExp&&Date.now()<S.tokenExp){
+    showBanner('Refreshing...',true);
+    fetchCal();
+    return;
+  }
+  // First time or expired — sign in (iOS needs explicit prompt to open popup)
   showBanner('Connecting to Google Calendar...',true);
   TC.requestAccessToken({prompt:'select_account'});
 }
@@ -192,7 +200,7 @@ function fetchCal(){
   var p=new URLSearchParams({timeMin:now.toISOString(),timeMax:end.toISOString(),singleEvents:'true',orderBy:'startTime',maxResults:'100'});
   fetch(CAL+'?'+p,{headers:{Authorization:'Bearer '+S.token}})
     .then(function(r){
-      if(r.status===401){S.token=null;showBanner('Session expired — tap Refresh again',false);return null;}
+      if(r.status===401){S.token=null;S.tokenExp=null;showBanner('Session expired — tap Refresh to sign in again',false);return null;}
       if(!r.ok)throw new Error('Error '+r.status);
       return r.json();
     })
