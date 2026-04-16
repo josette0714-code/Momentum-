@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Momentum">
+<meta name="theme-color" content="#1c1917">
+<title>Momentum</title>
+<script src="https://accounts.google.com/gsi/client"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#f5f3ee;font-family:Outfit,sans-serif;color:#1c1917;-webkit-tap-highlight-color:transparent}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.fade{animation:fadeIn .2s ease both}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,.15);border-top-color:#1c1917;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+button,input,textarea{font-family:Outfit,sans-serif;-webkit-appearance:none}
+input:focus,textarea:focus{outline:none}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:#d6d0c6;border-radius:2px}
+/* Nav */
+#nav{background:#fff;border-bottom:1px solid #ede9e3;padding:0 14px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:10px}
+.ntabs{display:flex;gap:2px;background:#f5f3ee;border-radius:7px;padding:2px;margin-left:8px}
+.ntab{padding:4px 9px;border-radius:5px;border:none;font-size:12px;font-weight:500;cursor:pointer;background:transparent;color:#78716c}
+.ntab.on{background:#fff;color:#1c1917;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+#main{padding:14px;max-width:1080px;margin:0 auto}
+/* Week tabs */
+.wtabs{display:flex;gap:2px;background:#ede9e3;border-radius:7px;padding:2px;margin-bottom:13px}
+.wtab{flex:1;padding:5px 2px;border-radius:5px;border:none;font-size:11px;font-weight:500;cursor:pointer;background:transparent;color:#78716c;text-align:center}
+.wtab.on{background:#fff;color:#1c1917;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+/* Events */
+.ev{display:flex;background:#fff;border-radius:10px;border:1px solid #ede9e3;overflow:hidden;margin-bottom:5px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ev-bar{width:4px;flex-shrink:0}
+.ev-body{flex:1;padding:8px 11px;display:flex;align-items:center;gap:9px;min-width:0}
+.ev-ic{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.ev-ttl{font-size:13px;font-weight:500;color:#1c1917;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev-loc{font-size:11px;color:#78716c;margin-top:1px}
+.ev-t{text-align:right;flex-shrink:0;font-size:12px;font-weight:600;color:#1c1917;line-height:1.3}
+.ev-t2{font-size:10px;color:#a8a29e;font-weight:400}
+.adl{font-size:10px;font-weight:500;border-radius:4px;padding:2px 6px}
+.dg{margin-bottom:15px}
+.dl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:#78716c;margin-bottom:7px;display:flex;align-items:center;gap:7px}
+.dl-line{flex:1;height:1px;background:#ede9e3}
+/* Task pill */
+.tpill{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:7px;background:#fff;margin-bottom:4px}
+/* Sidebar */
+.sb{background:#1c1917;border-radius:12px;padding:14px;color:#fafaf7;margin-bottom:10px}
+.sb h3{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;margin-bottom:2px}
+.sb-sub{font-size:10px;color:#a8a29e;margin-bottom:10px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sbox{background:rgba(255,255,255,.08);border-radius:6px;padding:7px 8px}
+.snum{font-size:16px;font-weight:600}
+.slbl{font-size:9px;color:#a8a29e;text-transform:uppercase;letter-spacing:.5px}
+.sc{background:#fff;border-radius:11px;border:1px solid #ede9e3;padding:11px 12px;margin-bottom:10px}
+.sc h4{font-size:10px;font-weight:600;color:#78716c;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
+/* Tasks */
+.lbtn{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;border:1px solid transparent;cursor:pointer;background:transparent;text-align:left;width:100%;margin-bottom:2px}
+.tr{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;background:#fff;border:1px solid #ede9e3;margin-bottom:4px;position:relative}
+.tr:hover{background:#faf8f4}
+.tr:hover .del{opacity:1}
+.ck{width:17px;height:17px;border-radius:4px;border:2px solid #a8a29e;background:#fff;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center}
+.ck.dn{border-color:#d6d0c6;background:#f5f3ee}
+.tm{flex:1;min-width:0}
+.tt{font-size:13px;color:#1c1917;line-height:1.4}
+.tt.dn{text-decoration:line-through;color:#a8a29e}
+.tn{font-size:11px;color:#78716c;margin-top:2px;padding:2px 5px;background:#fafaf7;border-radius:4px;border:1px solid #f0ece6;cursor:pointer}
+.tdu{font-size:11px;font-weight:500;margin-top:2px}
+.anb{font-size:11px;color:#c4b5a0;background:none;border:none;cursor:pointer;padding:2px 0;margin-top:1px;display:block}
+.del{opacity:0;position:absolute;right:6px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:3px;background:#fee2e2;color:#ef4444;border:none;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;transition:opacity .15s}
+.af{border-radius:9px;padding:11px 12px;margin-bottom:10px}
+.ai{width:100%;border:none;border-bottom:2px solid rgba(0,0,0,.15);background:transparent;font-size:14px;color:#1c1917;padding:2px 0;margin-bottom:7px}
+.ata{width:100%;border:1px solid rgba(0,0,0,.12);border-radius:5px;background:rgba(255,255,255,.7);font-size:12px;color:#44403c;padding:4px 6px;margin-bottom:7px;resize:vertical}
+.ad{border:1px solid #ede9e3;border-radius:5px;padding:3px 6px;font-size:12px;background:#fff}
+.pb{height:4px;background:#ede9e3;border-radius:2px;margin-top:4px}
+.pf{height:100%;border-radius:2px;transition:width .4s ease}
+/* Export overlay */
+#eo{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:200;overflow-y:auto;display:none}
+#eo.open{display:block}
+#ei{background:#fff;max-width:660px;width:100%;margin:0 auto;min-height:100vh;padding:16px 14px 36px}
+/* Refresh banner */
+#rbanner{background:#e0f2fe;border-bottom:1px solid #bae6fd;padding:7px 14px;font-size:12px;color:#0369a1;display:none;align-items:center;gap:8px}
+#rbanner.show{display:flex}
+/* Setup screen */
+#setup{position:fixed;inset:0;background:#f5f3ee;z-index:300;display:flex;align-items:center;justify-content:center;padding:24px}
+/* Responsive */
+@media(min-width:680px){
+  #main{padding:18px 22px}
+  .cl{display:grid;grid-template-columns:1fr 215px;gap:18px;align-items:start}
+  .tl{display:grid;grid-template-columns:1fr 200px;gap:18px;align-items:start}
+  .csc{position:sticky;top:60px}
+  .tsc{position:sticky;top:60px}
+}
+@media(max-width:679px){.csc,.tsc{display:none}}
+@media print{#nav,.np{display:none!important}}
+</style>
+</head>
+<body>
+
+<!-- SETUP: enter client ID once -->
+<div id="setup">
+  <div style="max-width:480px;width:100%">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <svg width="36" height="36" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#1c1917"/><polyline points="4,24 4,8 16,18 28,8 28,24" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700">Momentum</div>
+        <div style="font-size:11px;color:#78716c">One-time setup</div>
+      </div>
+    </div>
+    <div style="background:#fff;border-radius:13px;padding:20px;border:1px solid #ede9e3;margin-bottom:14px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:#1c1917">Paste your Google OAuth Client ID</div>
+      <div style="font-size:13px;color:#44403c;line-height:1.6;margin-bottom:14px">From Google Cloud Console → APIs &amp; Services → Credentials → your OAuth client.</div>
+      <input id="cid-input" type="text" placeholder="xxxxxxxx.apps.googleusercontent.com"
+        style="width:100%;padding:10px;border-radius:8px;border:1px solid #d6d0c6;font-size:13px;margin-bottom:10px">
+      <div id="setup-err" style="color:#ef4444;font-size:12px;margin-bottom:8px;display:none"></div>
+      <button onclick="saveSetup()" style="width:100%;padding:11px;border-radius:9px;border:none;background:#1c1917;color:#fff;font-size:14px;font-weight:600;cursor:pointer">
+        Save &amp; Connect Google Calendar
+      </button>
+    </div>
+    <div style="font-size:11px;color:#a8a29e;text-align:center">Your Client ID is saved locally on this device only.</div>
+  </div>
+</div>
+
+<!-- REFRESH BANNER -->
+<div id="rbanner"><span class="spinner"></span><span id="rmsg">Refreshing calendar...</span></div>
+
+<!-- NAV -->
+<div id="nav" style="display:none">
+  <div style="display:flex;align-items:center;gap:8px;min-width:0">
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" style="flex-shrink:0">
+      <rect width="32" height="32" rx="7" fill="#1c1917"/>
+      <polyline points="4,24 4,8 16,18 28,8 28,24" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div style="flex-shrink:0">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:#1c1917;line-height:1">Momentum</div>
+      <div style="font-size:8px;color:#a8a29e;letter-spacing:1.2px;text-transform:uppercase;margin-top:1px">Calendar + Tasks</div>
+    </div>
+    <div class="ntabs">
+      <button id="tc" class="ntab on" onclick="setTab('cal')">📅 Cal</button>
+      <button id="tt" class="ntab" onclick="setTab('tasks')">✓ Tasks</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:5px;flex-shrink:0">
+    <button id="refresh-btn" onclick="doRefresh()" style="padding:4px 10px;border-radius:14px;border:1px solid #ede9e3;background:#fff;color:#78716c;font-size:11px;cursor:pointer">🔄 Refresh</button>
+    <button onclick="showExp()" style="padding:4px 9px;border-radius:14px;border:1px solid #ede9e3;background:#fff;color:#78716c;font-size:11px;cursor:pointer">Export</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main" style="display:none">
+  <div id="vcal">
+    <div class="cl">
+      <div>
+        <div style="margin-bottom:11px">
+          <div id="ctitle" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:#1c1917"></div>
+          <div id="csub" style="font-size:12px;color:#a8a29e;margin-top:1px"></div>
+        </div>
+        <div class="wtabs" id="wt"></div>
+        <div id="cev"></div>
+      </div>
+      <div class="csc"><div id="csb"></div></div>
+    </div>
+  </div>
+  <div id="vtasks" style="display:none">
+    <div class="tl">
+      <div id="tpane"></div>
+      <div class="tsc">
+        <div class="sb"><h3>My Tasks</h3><div id="tst" class="sg" style="margin-top:10px"></div></div>
+        <div class="sc"><h4>Lists</h4><div id="ltabs"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT -->
+<div id="eo">
+  <div id="ei">
+    <div class="np" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:2px solid #1c1917;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#1c1917"/><polyline points="4,24 4,8 16,18 28,8 28,24" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700">Momentum</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button onclick="window.print()" style="padding:5px 11px;border-radius:6px;border:none;background:#1c1917;color:#fff;font-size:12px;cursor:pointer">Print / PDF</button>
+        <button onclick="closeExp()" style="padding:5px 9px;border-radius:6px;border:1px solid #ede9e3;background:#f5f3ee;color:#78716c;font-size:12px;cursor:pointer">Close</button>
+      </div>
+    </div>
+    <div id="ec"></div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+var CAL_API = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+var SCOPE    = 'https://www.googleapis.com/auth/calendar.readonly';
+var LISTS    = [
+  {id:'personal',   label:'Personal',         icon:'👤', color:'#f59e0b', bg:'#fef3c7', dark:'#92400e'},
+  {id:'kids',       label:'Kids',             icon:'🧒', color:'#10b981', bg:'#d1fae5', dark:'#065f46'},
+  {id:'christmas',  label:'Christmas Wonder', icon:'🎄', color:'#ef4444', bg:'#fee2e2', dark:'#991b1b'},
+  {id:'property',   label:'Property',         icon:'🏡', color:'#0ea5e9', bg:'#e0f2fe', dark:'#0c4a6e'},
+  {id:'investment', label:'Investment',        icon:'📈', color:'#8b5cf6', bg:'#ede9fe', dark:'#4c1d95'},
+  {id:'work',       label:'Work',             icon:'💼', color:'#64748b', bg:'#f1f5f9', dark:'#1e293b'},
+];
+var CAT = {
+  travel:   {color:'#0ea5e9', bg:'#e0f2fe', icon:'✈️'},
+  work:     {color:'#8b5cf6', bg:'#ede9fe', icon:'💼'},
+  health:   {color:'#10b981', bg:'#d1fae5', icon:'🏥'},
+  social:   {color:'#f59e0b', bg:'#fef3c7', icon:'🍽️'},
+  personal: {color:'#ec4899', bg:'#fce7f3', icon:'🏠'},
+};
+var WL = ['This Week','Next Week','Week 3','Week 4'];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var S = {tab:'cal', week:0, list:'personal', events:[], tasks:[], token:null};
+var tokenClient = null;
+var refreshPending = false;
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+function saveId(id) { try{localStorage.setItem('mcid',id);}catch(e){} }
+function loadId()   { try{return localStorage.getItem('mcid')||'';}catch(e){return '';} }
+function ltasks()   { try{return JSON.parse(localStorage.getItem('mmt')||'[]');}catch(e){return[];} }
+function sv()       { try{localStorage.setItem('mmt',JSON.stringify(S.tasks));}catch(e){} }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function dcat(t){t=(t||'').toLowerCase();if(/flight|trip|travel|holiday/.test(t))return'travel';if(/\bdr\b|\bgp\b|clinic|hospital|physio|\bpt\b|dentist|medical|fu dr/.test(t))return'health';if(/work|meeting|zoom|teams|conference|forum/.test(t))return'work';if(/dinner|lunch|breakfast|party|birthday|drinks|coffee/.test(t))return'social';return'personal';}
+function dk(iso){iso=iso||'';return iso.length===10?iso:iso.slice(0,10);}
+function ft(iso){if(!iso||iso.length===10)return'';try{return new Date(iso).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit',hour12:true});}catch(e){return'';}}
+function fdf(iso){try{return new Date(iso+'T12:00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});}catch(e){return iso;}}
+function fsh(d){try{return d.toLocaleDateString('en-AU',{day:'numeric',month:'short'});}catch(e){return'';}}
+function ito(iso){return iso===new Date().toISOString().slice(0,10);}
+function fdu(iso){if(!iso)return null;try{var d=new Date(iso+'T12:00:00'),t=new Date();t.setHours(0,0,0,0);var di=Math.floor((d-t)/86400000);if(di<0)return{l:'Overdue',c:'#ef4444'};if(di===0)return{l:'Due today',c:'#f59e0b'};if(di===1)return{l:'Due tomorrow',c:'#f59e0b'};return{l:'Due '+d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}),c:'#78716c'};}catch(e){return null;}}
+function wr(off){var t=new Date(),dow=t.getDay();var m=new Date(t);m.setDate(t.getDate()+(dow===0?-6:1-dow)+off*7);m.setHours(0,0,0,0);var s=new Date(m);s.setDate(m.getDate()+6);s.setHours(23,59,59,999);return{start:m,end:s};}
+function wdts(off){var r=wr(off),dates=[];for(var i=0;i<7;i++){var d=new Date(r.start);d.setDate(r.start.getDate()+i);dates.push(d.toISOString().slice(0,10));}return dates;}
+function fwk(evs,off){var r=wr(off);return evs.filter(function(ev){try{var iso=ev.start,d=new Date(iso.length===10?iso+'T00:00:00':iso);return d>=r.start&&d<=r.end;}catch(e){return false;}});}
+function gl(id){for(var i=0;i<LISTS.length;i++){if(LISTS[i].id===id)return LISTS[i];}return LISTS[0];}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function uid(){return 't'+Date.now()+Math.random().toString(36).slice(2);}
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
+function saveSetup() {
+  var cid = (document.getElementById('cid-input').value || '').trim();
+  if (!cid) { showSetupErr('Please paste your Client ID'); return; }
+  saveId(cid);
+  startApp(cid);
+}
+function showSetupErr(msg) {
+  var el = document.getElementById('setup-err');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+// ── Google Auth Init ──────────────────────────────────────────────────────────
+function initApp(clientId) {
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('nav').style.display = 'flex';
+  document.getElementById('main').style.display = 'block';
+  S.tasks = ltasks();
+
+  // Load seed events immediately while we wait for Google auth
+  loadSeedEvents();
+  rc(); rt();
+
+  // Init Google token client — but DON'T auto-trigger, wait for button tap
+  function tryInit() {
+    if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+      setTimeout(tryInit, 300); return;
+    }
+    tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPE,
+      callback: function(resp) {
+        if (resp.error) {
+          showBanner('Sign-in failed: ' + resp.error, false);
+          return;
+        }
+        S.token = resp.access_token;
+        fetchCalendarAPI();
+      }
+    });
+    // Do NOT auto-trigger - wait for user to tap Refresh
+    // Auto sign-in is blocked by iOS Safari ITP
+  }
+  tryInit();
+}
+
+// ── Refresh button ────────────────────────────────────────────────────────────
+function doRefresh() {
+  if (!tokenClient) { showBanner('Still loading auth...', false); return; }
+  refreshPending = true;
+  document.getElementById('refresh-btn').disabled = true;
+  // Use 'select_account' so iOS Safari allows the popup
+  tokenClient.requestAccessToken({prompt: 'select_account'});
+}
+
+function showBanner(msg, loading) {
+  var b = document.getElementById('rbanner');
+  var m = document.getElementById('rmsg');
+  m.textContent = msg;
+  b.className = 'show';
+  if (!loading) {
+    setTimeout(function(){ b.className = ''; document.getElementById('refresh-btn').disabled = false; }, 3000);
+  }
+}
+
+// ── Fetch from Google Calendar API ───────────────────────────────────────────
+function fetchCalendarAPI() {
+  if (!S.token) return;
+  showBanner('Refreshing calendar...', true);
+  var now = new Date(), end = new Date(now.getTime() + 28*24*3600000);
+  var params = new URLSearchParams({
+    timeMin: now.toISOString(), timeMax: end.toISOString(),
+    singleEvents: 'true', orderBy: 'startTime', maxResults: '100'
+  });
+  fetch(CAL_API + '?' + params, { headers: { Authorization: 'Bearer ' + S.token } })
+    .then(function(r) {
+      if (r.status === 401) { S.token = null; showBanner('Session expired — tap Refresh to sign in again', false); return null; }
+      if (!r.ok) throw new Error('Calendar error ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      if (!data) return;
+      S.events = (data.items || []).map(function(item) {
+        return {
+          id: item.id, title: item.summary || 'Untitled',
+          start: (item.start && (item.start.dateTime || item.start.date)) || '',
+          end:   (item.end   && (item.end.dateTime   || item.end.date))   || '',
+          allDay: !(item.start && item.start.dateTime),
+          location: item.location || '', cat: dcat(item.summary || '')
+        };
+      });
+      rc();
+      var b = document.getElementById('rbanner');
+      document.getElementById('rmsg').textContent = '✓ Calendar updated — ' + S.events.length + ' events';
+      setTimeout(function(){ b.className = ''; document.getElementById('refresh-btn').disabled = false; }, 2000);
+    })
+    .catch(function(e) {
+      showBanner('Could not refresh: ' + e.message, false);
+    });
+}
+
+// ── Seed events (shown before/if auth fails) ──────────────────────────────────
+function loadSeedEvents() {
+  S.events = [
+    {id:'e1', title:'Japan & HK trip',                    start:'2026-04-04',                end:'2026-04-19',                allDay:true,  location:'',                   cat:'travel'},
+    {id:'e2', title:"Dinner at Paul and Sheila's place",  start:'2026-04-16T18:00:00+10:00', end:'2026-04-16T21:00:00+10:00', allDay:false, location:'',                   cat:'social'},
+    {id:'e3', title:'PT',                                 start:'2026-04-17T11:00:00+10:00', end:'2026-04-17T12:00:00+10:00', allDay:false, location:'',                   cat:'health'},
+    {id:'e4', title:'Flight to Brisbane (CX 165)',        start:'2026-04-18T02:15:00+10:00', end:'2026-04-18T10:50:00+10:00', allDay:false, location:'Hong Kong HKG',      cat:'travel'},
+    {id:'e5', title:'Drop off girls',                     start:'2026-04-20',                end:'2026-04-21',                allDay:true,  location:'',                   cat:'personal'},
+    {id:'e6', title:'Flight to Sydney (JQ 785)',          start:'2026-04-20T08:15:00+10:00', end:'2026-04-20T10:00:00+10:00', allDay:false, location:'Sunshine Coast MCY', cat:'travel'},
+    {id:'e7', title:'Flight to Sunshine Coast (QF 1578)', start:'2026-04-20T19:45:00+10:00', end:'2026-04-20T21:25:00+10:00', allDay:false, location:'Sydney SYD',         cat:'travel'},
+    {id:'e8', title:'PHU work',                           start:'2026-04-21T08:00:00+10:00', end:'2026-04-21T12:00:00+10:00', allDay:false, location:'',                   cat:'work'},
+    {id:'e9', title:'Collect key',                        start:'2026-04-21T14:00:00+10:00', end:'2026-04-21T15:00:00+10:00', allDay:false, location:'',                   cat:'personal'},
+    {id:'e10',title:'Dr K',                               start:'2026-04-22T08:00:00+10:00', end:'2026-04-22T09:00:00+10:00', allDay:false, location:'',                   cat:'health'},
+    {id:'e11',title:'House clean Nikenbah',               start:'2026-04-22T09:00:00+10:00', end:'2026-04-22T16:00:00+10:00', allDay:false, location:'',                   cat:'personal'},
+    {id:'e12',title:'Pest control Nikenbah',              start:'2026-04-23T13:30:00+10:00', end:'2026-04-23T15:30:00+10:00', allDay:false, location:'',                   cat:'personal'},
+    {id:'e13',title:'EP',                                 start:'2026-04-23T15:30:00+10:00', end:'2026-04-23T16:00:00+10:00', allDay:false, location:'',                   cat:'health'},
+    {id:'e14',title:'PHU work',                           start:'2026-04-24T08:00:00+10:00', end:'2026-04-24T12:00:00+10:00', allDay:false, location:'',                   cat:'work'},
+    {id:'e15',title:'CP',                                 start:'2026-04-25T10:00:00+10:00', end:'2026-04-25T11:00:00+10:00', allDay:false, location:'',                   cat:'health'},
+    {id:'e16',title:'PHU work',                           start:'2026-04-27T08:00:00+10:00', end:'2026-04-27T12:00:00+10:00', allDay:false, location:'',                   cat:'work'},
+    {id:'e17',title:'See GP Lucy Randall',                start:'2026-04-27T09:45:00+10:00', end:'2026-04-27T10:15:00+10:00', allDay:false, location:'Ninox Health Buderim',cat:'health'},
+    {id:'e18',title:'BBV/STI partnership forum',          start:'2026-04-28T09:00:00+10:00', end:'2026-04-28T16:30:00+10:00', allDay:false, location:'State Library QLD',  cat:'work'},
+    {id:'e19',title:'FU Dr Matthew Terrill',              start:'2026-04-29T09:30:00+10:00', end:'2026-04-29T10:30:00+10:00', allDay:false, location:'',                   cat:'health'},
+    {id:'e20',title:'PHU work',                           start:'2026-04-30T08:00:00+10:00', end:'2026-04-30T12:00:00+10:00', allDay:false, location:'',                   cat:'work'},
+    {id:'e21',title:'EP',                                 start:'2026-04-30T15:30:00+10:00', end:'2026-04-30T16:00:00+10:00', allDay:false, location:'',                   cat:'health'},
+    {id:'e22',title:'PHU work',                           start:'2026-05-05T08:00:00+10:00', end:'2026-05-05T12:00:00+10:00', allDay:false, location:'',                   cat:'work'},
+    {id:'e23',title:'EP',                                 start:'2026-05-07T15:30:00+10:00', end:'2026-05-07T16:00:00+10:00', allDay:false, location:'',                   cat:'health'},
+    {id:'e24',title:'PHU work',                           start:'2026-05-08T08:00:00+10:00', end:'2026-05-08T12:00:00+10:00', allDay:false, location:'',                   cat:'work'},
+    {id:'e25',title:'PHU work',                           start:'2026-05-11T08:00:00+10:00', end:'2026-05-11T12:00:00+10:00', allDay:false, location:'',                   cat:'work'},
+    {id:'e26',title:'PHU work',                           start:'2026-05-14T08:00:00+10:00', end:'2026-05-14T12:00:00+10:00', allDay:false, location:'',                   cat:'work'},
+    {id:'e27',title:'EP',                                 start:'2026-05-14T15:30:00+10:00', end:'2026-05-14T16:00:00+10:00', allDay:false, location:'',                   cat:'health'},
+  ];
+}
+
+// ── Calendar render ───────────────────────────────────────────────────────────
+function rc(){
+  document.getElementById('wt').innerHTML=WL.map(function(l,i){return'<button class="wtab'+(S.week===i?' on':'')+'" onclick="sw('+i+')">'+l+'</button>';}).join('');
+  var r=wr(S.week);
+  document.getElementById('ctitle').textContent=WL[S.week];
+  document.getElementById('csub').textContent=fsh(r.start)+' – '+fsh(r.end);
+  var wevs=fwk(S.events,S.week),wdates=wdts(S.week);
+  var seen={},allD=[];
+  wevs.forEach(function(e){var k=dk(e.start);if(!seen[k]){seen[k]=true;allD.push(k);}});
+  wdates.forEach(function(d){if(!seen[d]&&S.tasks.some(function(t){return !t.done&&t.due===d;})){seen[d]=true;allD.push(d);}});
+  allD.sort();
+  var noDue=S.tasks.filter(function(t){return !t.done&&!t.due;});
+  var html='';
+  if(!allD.length&&!noDue.length){html='<div style="text-align:center;padding:40px 0;color:#a8a29e;font-size:14px">Nothing scheduled.</div>';}
+  else{
+    allD.forEach(function(d){
+      var evs=wevs.filter(function(ev){return dk(ev.start)===d;});
+      var dt=S.tasks.filter(function(t){return !t.done&&t.due===d;});
+      var tod=ito(d),tot=evs.length+dt.length;
+      html+='<div class="dg"><div class="dl">';
+      html+=tod?'<span style="color:#0ea5e9">'+esc(fdf(d))+'</span><span style="font-size:10px;font-weight:600;color:#fff;background:#0ea5e9;border-radius:4px;padding:1px 6px">Today</span>':'<span>'+esc(fdf(d))+'</span>';
+      html+='<span class="dl-line"></span><span style="font-size:11px;color:#a8a29e">'+tot+' item'+(tot!==1?'s':'')+'</span></div>';
+      evs.forEach(function(ev){html+=ecard(ev);});
+      dt.forEach(function(t){html+=tpill(t);});
+      html+='</div>';
+    });
+    if(noDue.length){html+='<div class="dg"><div class="dl"><span>Pending Tasks</span><span class="dl-line"></span></div>';noDue.forEach(function(t){html+=tpill(t);});html+='</div>';}
+  }
+  document.getElementById('cev').innerHTML=html;
+  rsb();
+}
+function ecard(ev){
+  var c=CAT[ev.cat]||CAT.personal,t1=ft(ev.start),t2=ft(ev.end);
+  var th=ev.allDay?'<span class="adl" style="color:'+c.color+';background:'+c.bg+'">All day</span>':'<div class="ev-t">'+esc(t1)+'</div>'+(t2?'<div class="ev-t2">'+esc(t2)+'</div>':'');
+  return'<div class="ev"><div class="ev-bar" style="background:'+c.color+'"></div><div class="ev-body"><div class="ev-ic" style="background:'+c.bg+'">'+c.icon+'</div><div style="flex:1;min-width:0"><div class="ev-ttl">'+esc(ev.title)+'</div>'+(ev.location?'<div class="ev-loc">📍'+esc(ev.location)+'</div>':'')+'</div><div style="text-align:right;flex-shrink:0">'+th+'</div></div></div>';
+}
+function tpill(t){var l=gl(t.list);return'<div class="tpill" style="border:1px dashed '+l.color+'70"><div style="width:3px;height:15px;border-radius:2px;background:'+l.color+';flex-shrink:0"></div><span style="font-size:12px">'+l.icon+'</span><span style="font-size:12px;color:#44403c;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(t.title)+'</span><span style="font-size:10px;color:'+l.color+';background:'+l.bg+';border-radius:3px;padding:1px 5px">task</span></div>';}
+function rsb(){
+  var ev=S.events,now=new Date(),nf=null;
+  for(var i=0;i<ev.length;i++){if(ev[i].cat==='travel'&&!ev[i].allDay&&new Date(ev[i].start)>now){nf=ev[i];break;}}
+  var cm={};ev.forEach(function(e){cm[e.cat]=(cm[e.cat]||0)+1;});
+  var html='<div class="sb"><h3>Calendar</h3><div class="sb-sub">'+new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'})+'</div><div class="sg">';
+  [['This wk',fwk(ev,0).length],['Next wk',fwk(ev,1).length],['Flights',ev.filter(function(e){return e.cat==='travel'&&!e.allDay;}).length],['Total',ev.length]].forEach(function(p){html+='<div class="sbox"><div class="snum">'+p[1]+'</div><div class="slbl">'+p[0]+'</div></div>';});
+  html+='</div></div>';
+  if(nf)html+='<div style="background:#e0f2fe;border:1px solid #bae6fd;border-radius:10px;padding:10px 12px;margin-bottom:10px"><div style="font-size:10px;font-weight:600;color:#0ea5e9;text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px">✈️ Next Flight</div><div style="font-size:12px;font-weight:600;color:#0c4a6e">'+esc(nf.title)+'</div><div style="font-size:11px;color:#0369a1;margin-top:1px">'+esc(fdf(dk(nf.start)))+' · '+esc(ft(nf.start))+'</div></div>';
+  if(Object.keys(cm).length){html+='<div class="sc"><h4>Categories</h4>';Object.keys(cm).forEach(function(cat){var c=CAT[cat];if(!c)return;var p=Math.round(cm[cat]/ev.length*100);html+='<div style="margin-bottom:7px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#1c1917;margin-bottom:2px"><span>'+c.icon+' '+cat.charAt(0).toUpperCase()+cat.slice(1)+'</span><span style="color:#78716c">'+cm[cat]+'</span></div><div style="height:3px;background:#f5f3ee;border-radius:2px"><div style="height:100%;width:'+p+'%;background:'+c.color+';border-radius:2px"></div></div></div>';});html+='</div>';}
+  document.getElementById('csb').innerHTML=html;
+}
+function sw(i){S.week=i;rc();}
+
+// ── Tasks ─────────────────────────────────────────────────────────────────────
+function rt(){
+  var tasks=S.tasks;
+  var p=tasks.filter(function(t){return !t.done;}).length;
+  var od=tasks.filter(function(t){if(t.done||!t.due)return false;return new Date(t.due+'T23:59:59')<new Date();}).length;
+  var dc=tasks.filter(function(t){return t.done;}).length;
+  var sh='';[['Pending',p,false],['Overdue',od,od>0],['Lists',LISTS.length,false],['Done',dc,false]].forEach(function(r){sh+='<div class="sbox"><div class="snum" style="color:'+(r[2]?'#fca5a5':'#fafaf7')+'">'+r[1]+'</div><div class="slbl">'+r[0]+'</div></div>';});
+  document.getElementById('tst').innerHTML=sh;
+  var lh='';LISTS.forEach(function(l){var cnt=tasks.filter(function(t){return t.list===l.id&&!t.done;}).length;var a=S.list===l.id;lh+='<button class="lbtn" onclick="sl(\''+l.id+'\')" style="background:'+(a?l.bg:'transparent')+';border-color:'+(a?l.color+'40':'transparent')+'">'+'<div style="width:23px;height:23px;border-radius:6px;background:'+(a?l.color:l.bg)+';display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">'+l.icon+'</div>'+'<span style="flex:1;font-size:12px;font-weight:500;color:'+(a?l.dark:'#44403c')+'">'+esc(l.label)+'</span>'+(cnt>0?'<span style="font-size:10px;font-weight:600;color:'+l.color+';background:'+l.bg+';border-radius:8px;padding:1px 5px">'+cnt+'</span>':'')+'</button>';});
+  document.getElementById('ltabs').innerHTML=lh;
+  rtp();
+}
+function rtp(){
+  var tasks=S.tasks,lid=S.list,list=gl(lid);
+  var all=tasks.filter(function(t){return t.list===lid;});
+  var hd=S['h_'+lid]||false;
+  var shown=hd?all.filter(function(t){return !t.done;}):all;
+  var dn=all.filter(function(t){return t.done;}).length;
+  var pn=all.filter(function(t){return !t.done;}).length;
+  var pct=all.length?Math.round(dn/all.length*100):0;
+  var html='<div class="fade"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:7px"><div style="display:flex;align-items:center;gap:9px"><div style="width:34px;height:34px;border-radius:9px;background:'+list.bg+';display:flex;align-items:center;justify-content:center;font-size:18px">'+list.icon+'</div><div><h2 style="font-family:\'Cormorant Garamond\',serif;font-size:21px;font-weight:700;color:#1c1917;line-height:1">'+esc(list.label)+'</h2><div style="font-size:11px;color:#78716c;margin-top:1px">'+pn+' pending · '+dn+' done</div></div></div><div style="display:flex;gap:6px">'+(dn>0?'<button onclick="th()" style="padding:4px 10px;border-radius:15px;font-size:12px;cursor:pointer;border:1px solid #ede9e3;background:'+(hd?list.color:'#fff')+';color:'+(hd?'#fff':'#78716c')+'">'+(hd?'Show '+dn:' Hide '+dn+' done')+'</button>':'')+'<button onclick="saf()" style="padding:4px 12px;border-radius:15px;font-size:12px;font-weight:500;border:none;background:'+list.color+';color:#fff;cursor:pointer">+ Add task</button></div></div><div id="afw"></div>';
+  if(!shown.length)html+='<div style="text-align:center;padding:36px 0;color:#a8a29e;font-size:13px">'+(hd?'All hidden':"No tasks yet")+'</div>';
+  else shown.forEach(function(t){html+=trow(t);});
+  if(all.length)html+='<div style="margin-top:14px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#a8a29e;margin-bottom:3px"><span>Progress</span><span>'+dn+'/'+all.length+'</span></div><div class="pb"><div class="pf" style="width:'+pct+'%;background:'+list.color+'"></div></div></div>';
+  html+='</div>';
+  document.getElementById('tpane').innerHTML=html;
+}
+function trow(t){var du=fdu(t.due);return'<div class="tr"><button class="ck'+(t.done?' dn':'')+'" onclick="tg(\''+t.id+'\')">'+(t.done?'<span style="font-size:9px;color:#a8a29e;font-weight:700">✓</span>':'')+'</button><div class="tm"><div class="tt'+(t.done?' dn':'')+'" ondblclick="et(\''+t.id+'\')">'+esc(t.title)+'</div>'+(t.notes?'<div class="tn" onclick="en(\''+t.id+'\')">'+esc(t.notes)+'</div>':(!t.done?'<button class="anb" onclick="en(\''+t.id+'\')">+ add note</button>':''))+(du&&!t.done?'<div class="tdu" style="color:'+du.c+'">'+du.l+'</div>':'')+'</div><button class="del" onclick="dt(\''+t.id+'\')">✕</button></div>';}
+function tg(id){S.tasks=S.tasks.map(function(t){return t.id===id?Object.assign({},t,{done:!t.done}):t;});sv();rt();}
+function dt(id){S.tasks=S.tasks.filter(function(t){return t.id!==id;});sv();rt();}
+function th(){S['h_'+S.list]=!S['h_'+S.list];rtp();}
+function sl(id){S.list=id;rt();}
+function et(id){var t=S.tasks.find(function(x){return x.id===id;});if(!t||t.done)return;var v=prompt('Edit:',t.title);if(v&&v.trim()){S.tasks=S.tasks.map(function(x){return x.id===id?Object.assign({},x,{title:v.trim()}):x;});sv();rtp();}}
+function en(id){var t=S.tasks.find(function(x){return x.id===id;});if(!t||t.done)return;var v=prompt('Note:',t.notes||'');if(v!==null){S.tasks=S.tasks.map(function(x){return x.id===id?Object.assign({},x,{notes:v.trim()}):x;});sv();rtp();}}
+var afo=false;
+function saf(){afo=!afo;if(!afo){document.getElementById('afw').innerHTML='';return;}var l=gl(S.list);document.getElementById('afw').innerHTML='<div class="af" style="background:'+l.bg+';border:1px solid '+l.color+'30"><input class="ai" id="ai" placeholder="Task title..." onkeydown="ak(event)"><textarea class="ata" id="an" rows="2" placeholder="Notes (optional)..."></textarea><div style="display:flex;align-items:center;gap:7px"><input type="date" class="ad" id="ad"><div style="margin-left:auto;display:flex;gap:5px"><button onclick="saf()" style="padding:3px 10px;border-radius:6px;border:1px solid #ede9e3;background:#fff;color:#78716c;font-size:12px;cursor:pointer">Cancel</button><button onclick="sa()" style="padding:3px 11px;border-radius:6px;border:none;background:'+l.color+';color:#fff;font-size:12px;font-weight:500;cursor:pointer">Add</button></div></div></div>';document.getElementById('ai').focus();}
+function ak(e){if(e.key==='Enter')sa();if(e.key==='Escape')saf();}
+function sa(){var t=(document.getElementById('ai').value||'').trim();if(!t)return;var n=(document.getElementById('an').value||'').trim();var d=document.getElementById('ad').value||null;S.tasks.push({id:uid(),list:S.list,title:t,notes:n,done:false,due:d});sv();afo=false;rt();}
+
+// ── Tab ───────────────────────────────────────────────────────────────────────
+function setTab(tab){S.tab=tab;document.getElementById('vcal').style.display=tab==='cal'?'block':'none';document.getElementById('vtasks').style.display=tab==='tasks'?'block':'none';document.getElementById('tc').className='ntab'+(tab==='cal'?' on':'');document.getElementById('tt').className='ntab'+(tab==='tasks'?' on':'');if(tab==='tasks')rt();}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+function showExp(){
+  var ds=new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  var gr={};S.events.forEach(function(ev){var k=dk(ev.start);if(!gr[k])gr[k]=[];gr[k].push(ev);});
+  var sd=Object.keys(gr).sort();
+  var html='<div style="font-size:11px;color:#78716c;margin-bottom:12px">'+esc(ds)+'</div>';
+  html+='<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-weight:700;margin-bottom:9px;padding-bottom:3px;border-bottom:1px solid #ede9e3">Calendar Events</div>';
+  if(!sd.length)html+='<p style="color:#999;font-style:italic;font-size:13px">No events.</p>';
+  else sd.forEach(function(d){html+='<div style="margin-bottom:11px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#78716c;margin-bottom:3px">'+esc(fdf(d))+'</div>';gr[d].forEach(function(ev){var c=CAT[ev.cat]||CAT.personal,t1=ft(ev.start),t2=ft(ev.end),ts=ev.allDay?'All day':(t1+(t2?' – '+t2:''));html+='<div style="display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid #ede9e3;border-radius:5px;margin-bottom:3px;background:#fafaf7"><div style="width:3px;height:20px;border-radius:2px;background:'+c.color+';flex-shrink:0"></div><div style="flex:1"><div style="font-size:12px;font-weight:500">'+esc(ev.title)+'</div>'+(ev.location?'<div style="font-size:10px;color:#78716c">'+esc(ev.location)+'</div>':'')+'</div><div style="font-size:11px;color:#78716c">'+esc(ts)+'</div></div>';});html+='</div>';});
+  html+='<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-weight:700;margin-bottom:9px;padding-bottom:3px;border-bottom:1px solid #ede9e3;margin-top:10px">Tasks</div>';
+  LISTS.forEach(function(list){var pend=S.tasks.filter(function(t){return t.list===list.id&&!t.done;});var comp=S.tasks.filter(function(t){return t.list===list.id&&t.done;});if(!pend.length&&!comp.length)return;html+='<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;padding:4px 7px;background:#f5f3ee;border-left:3px solid '+list.color+';border-radius:0 5px 5px 0;margin-bottom:4px;display:flex;justify-content:space-between"><span>'+list.icon+' '+esc(list.label)+'</span><span style="font-size:11px;font-weight:400;color:#78716c">'+pend.length+' pending</span></div>';pend.forEach(function(t){var du=fdu(t.due);html+='<div style="display:flex;gap:6px;padding:4px 7px;border-bottom:1px solid #f5f3ee"><span style="color:#a8a29e">○</span><div><div style="font-size:12px">'+esc(t.title)+'</div>'+(t.notes?'<div style="font-size:11px;color:#78716c">'+esc(t.notes)+'</div>':'')+(du?'<div style="font-size:11px;color:'+du.c+'">'+du.l+'</div>':'')+'</div></div>';});if(comp.length){html+='<div style="font-size:9px;color:#a8a29e;text-transform:uppercase;margin:4px 0 2px;padding-left:7px">Done ('+comp.length+')</div>';comp.forEach(function(t){html+='<div style="display:flex;gap:6px;padding:4px 7px;border-bottom:1px solid #f5f3ee;opacity:.5"><span style="color:#a8a29e">✓</span><div style="font-size:12px;text-decoration:line-through">'+esc(t.title)+'</div></div>';});}html+='</div>';});
+  html+='<div style="margin-top:16px;padding-top:8px;border-top:1px solid #ede9e3;font-size:11px;color:#a8a29e;text-align:center">Momentum · '+esc(ds)+'</div>';
+  document.getElementById('ec').innerHTML=html;
+  document.getElementById('eo').className='open';
+}
+function closeExp(){document.getElementById('eo').className='';}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(function(){
+  var cid = loadId();
+  if (cid) {
+    startApp(cid);
+  }
+  // else setup screen is already visible
+})();
+</script>
+</body>
+</html>
