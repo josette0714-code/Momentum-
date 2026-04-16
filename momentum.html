@@ -145,13 +145,13 @@ var SCOPE='https://www.googleapis.com/auth/calendar.readonly';
 var LISTS=[{id:'personal',label:'Personal',icon:'👤',color:'#f59e0b',bg:'#fef3c7',dark:'#92400e'},{id:'kids',label:'Kids',icon:'🧒',color:'#10b981',bg:'#d1fae5',dark:'#065f46'},{id:'christmas',label:'Christmas Wonder',icon:'🎄',color:'#ef4444',bg:'#fee2e2',dark:'#991b1b'},{id:'property',label:'Property',icon:'🏡',color:'#0ea5e9',bg:'#e0f2fe',dark:'#0c4a6e'},{id:'investment',label:'Investment',icon:'📈',color:'#8b5cf6',bg:'#ede9fe',dark:'#4c1d95'},{id:'work',label:'Work',icon:'💼',color:'#64748b',bg:'#f1f5f9',dark:'#1e293b'}];
 var CAT={travel:{color:'#0ea5e9',bg:'#e0f2fe',icon:'✈️'},work:{color:'#8b5cf6',bg:'#ede9fe',icon:'💼'},health:{color:'#10b981',bg:'#d1fae5',icon:'🏥'},social:{color:'#f59e0b',bg:'#fef3c7',icon:'🍽️'},personal:{color:'#ec4899',bg:'#fce7f3',icon:'🏠'}};
 var WL=['This Week','Next Week','Week 3','Week 4'];
-var S={tab:'cal',week:0,list:'personal',events:[],tasks:[],token:null};
+var S={tab:'cal',week:0,list:'personal',events:[],tasks:[],token:null,calTz:'Australia/Sydney'};
 var TC=null;
 
 // HELPERS
 function dc(t){t=(t||'').toLowerCase();if(/flight|trip|travel|holiday/.test(t))return'travel';if(/\bdr\b|\bgp\b|clinic|hospital|physio|\bpt\b|dentist|medical|fu dr/.test(t))return'health';if(/work|meeting|zoom|teams|conference|forum/.test(t))return'work';if(/dinner|lunch|breakfast|party|birthday|drinks|coffee/.test(t))return'social';return'personal';}
 function dk(i){i=i||'';return i.length===10?i:i.slice(0,10);}
-function ft(i){if(!i||i.length===10)return'';try{return new Date(i).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit',hour12:true});}catch(e){return'';}}
+function ft(i){if(!i||i.length===10)return'';try{return new Date(i).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:S.calTz});}catch(e){return'';}}
 function fdf(i){try{return new Date(i+'T12:00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});}catch(e){return i;}}
 function fsh(d){try{return d.toLocaleDateString('en-AU',{day:'numeric',month:'short'});}catch(e){return'';}}
 function ito(i){return i===new Date().toISOString().slice(0,10);}
@@ -164,6 +164,8 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function uid(){return 't'+Date.now()+Math.random().toString(36).slice(2);}
 function lt(){try{return JSON.parse(localStorage.getItem('mmt')||'[]');}catch(e){return[];}}
 function sv(){try{localStorage.setItem('mmt',JSON.stringify(S.tasks));}catch(e){}}
+function saveTz(tz){try{localStorage.setItem('mcaltz',tz);}catch(e){}}
+function loadTz(){try{return localStorage.getItem('mcaltz')||'Australia/Sydney';}catch(e){return 'Australia/Sydney';}}
 
 // GOOGLE AUTH
 function initGoogle(){
@@ -343,6 +345,7 @@ function showExp(){
 }
 
 // BOOT
+S.calTz=localStorage.getItem('mcaltz')||'Australia/Sydney';
 S.tasks=lt();
 seedEvents();
 rc();rt();
