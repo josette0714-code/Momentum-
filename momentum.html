@@ -5,10 +5,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Momentum</title>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -30,34 +30,31 @@ input:focus,textarea:focus{outline:none}
 <div id="root"></div>
 <script type="text/babel">
 
-var h = React.createElement;
 var useState    = React.useState;
 var useEffect   = React.useEffect;
 var useReducer  = React.useReducer;
 var useRef      = React.useRef;
 
-// ── Constants ─────────────────────────────────────────────────────────────────
 var SCOPE   = ‘https://www.googleapis.com/auth/calendar.readonly’;
 var CAL_API = ‘https://www.googleapis.com/calendar/v3/calendars/primary/events’;
+var WEEK_LABELS = [‘This Week’,‘Next Week’,‘Week 3’,‘Week 4’];
 
 var LISTS = [
-{ id:‘personal’,   label:‘Personal’,         icon:‘👤’, color:’#f59e0b’, bg:’#fef3c7’, dark:’#92400e’ },
-{ id:‘kids’,       label:‘Kids’,             icon:‘🧒’, color:’#10b981’, bg:’#d1fae5’, dark:’#065f46’ },
-{ id:‘christmas’,  label:‘Christmas Wonder’, icon:‘🎄’, color:’#ef4444’, bg:’#fee2e2’, dark:’#991b1b’ },
-{ id:‘property’,   label:‘Property’,         icon:‘🏡’, color:’#0ea5e9’, bg:’#e0f2fe’, dark:’#0c4a6e’ },
-{ id:‘investment’, label:‘Investment’,       icon:‘📈’, color:’#8b5cf6’, bg:’#ede9fe’, dark:’#4c1d95’ },
-{ id:‘work’,       label:‘Work’,             icon:‘💼’, color:’#64748b’, bg:’#f1f5f9’, dark:’#1e293b’ },
+{id:‘personal’,   label:‘Personal’,         icon:‘👤’, color:’#f59e0b’, bg:’#fef3c7’, dark:’#92400e’},
+{id:‘kids’,       label:‘Kids’,             icon:‘🧒’, color:’#10b981’, bg:’#d1fae5’, dark:’#065f46’},
+{id:‘christmas’,  label:‘Christmas Wonder’, icon:‘🎄’, color:’#ef4444’, bg:’#fee2e2’, dark:’#991b1b’},
+{id:‘property’,   label:‘Property’,         icon:‘🏡’, color:’#0ea5e9’, bg:’#e0f2fe’, dark:’#0c4a6e’},
+{id:‘investment’, label:‘Investment’,       icon:‘📈’, color:’#8b5cf6’, bg:’#ede9fe’, dark:’#4c1d95’},
+{id:‘work’,       label:‘Work’,             icon:‘💼’, color:’#64748b’, bg:’#f1f5f9’, dark:’#1e293b’},
 ];
 
 var CAT = {
-travel:   { color:’#0ea5e9’, bg:’#e0f2fe’, icon:‘✈️’,  label:‘Travel’   },
-work:     { color:’#8b5cf6’, bg:’#ede9fe’, icon:‘💼’,  label:‘Work’     },
-health:   { color:’#10b981’, bg:’#d1fae5’, icon:‘🏥’,  label:‘Health’   },
-social:   { color:’#f59e0b’, bg:’#fef3c7’, icon:‘🍽️’, label:‘Social’   },
-personal: { color:’#ec4899’, bg:’#fce7f3’, icon:‘🏠’,  label:‘Personal’ },
+travel:   {color:’#0ea5e9’, bg:’#e0f2fe’, icon:‘✈️’,  label:‘Travel’},
+work:     {color:’#8b5cf6’, bg:’#ede9fe’, icon:‘💼’,  label:‘Work’},
+health:   {color:’#10b981’, bg:’#d1fae5’, icon:‘🏥’,  label:‘Health’},
+social:   {color:’#f59e0b’, bg:’#fef3c7’, icon:‘🍽️’, label:‘Social’},
+personal: {color:’#ec4899’, bg:’#fce7f3’, icon:‘🏠’,  label:‘Personal’},
 };
-
-var WEEK_LABELS = [‘This Week’,‘Next Week’,‘Week 3’,‘Week 4’];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function detectCat(t) {
@@ -68,246 +65,153 @@ if (/work|meeting|zoom|teams|conference|seminar|forum/.test(t)) return ‘work�
 if (/dinner|lunch|breakfast|party|birthday|drinks|coffee/.test(t)) return ‘social’;
 return ‘personal’;
 }
-
-function dkey(iso) {
-iso = iso || ‘’;
-return iso.length === 10 ? iso : iso.slice(0, 10);
-}
-
+function dkey(iso) { iso=iso||’’; return iso.length===10?iso:iso.slice(0,10); }
 function ftime(iso) {
-if (!iso || iso.length === 10) return ‘’;
-try { return new Date(iso).toLocaleTimeString(‘en-AU’, {hour:‘numeric’, minute:‘2-digit’, hour12:true}); }
-catch(e) { return ‘’; }
+if (!iso||iso.length===10) return ‘’;
+try { return new Date(iso).toLocaleTimeString(‘en-AU’,{hour:‘numeric’,minute:‘2-digit’,hour12:true}); } catch(e){return ‘’;}
 }
-
 function fdayfull(iso) {
-try { return new Date(iso + ‘T12:00:00’).toLocaleDateString(‘en-AU’, {weekday:‘long’, day:‘numeric’, month:‘long’}); }
-catch(e) { return iso; }
+try { return new Date(iso+‘T12:00:00’).toLocaleDateString(‘en-AU’,{weekday:‘long’,day:‘numeric’,month:‘long’}); } catch(e){return iso;}
 }
-
 function fshort(d) {
-try { return d.toLocaleDateString(‘en-AU’, {day:‘numeric’, month:‘short’}); }
-catch(e) { return ‘’; }
+try { return d.toLocaleDateString(‘en-AU’,{day:‘numeric’,month:‘short’}); } catch(e){return ‘’;}
 }
-
-function istoday(iso) {
-return iso === new Date().toISOString().slice(0, 10);
-}
-
+function istoday(iso) { return iso===new Date().toISOString().slice(0,10); }
 function fdue(iso) {
 if (!iso) return null;
 try {
-var d = new Date(iso + ‘T12:00:00’);
-var t = new Date(); t.setHours(0,0,0,0);
-var diff = Math.floor((d - t) / 86400000);
-if (diff < 0)  return {label:‘Overdue’,      color:’#ef4444’};
-if (diff === 0) return {label:‘Due today’,   color:’#f59e0b’};
-if (diff === 1) return {label:‘Due tomorrow’,color:’#f59e0b’};
-return {label:‘Due ’ + d.toLocaleDateString(‘en-AU’,{day:‘numeric’,month:‘short’}), color:’#78716c’};
-} catch(e) { return null; }
+var d=new Date(iso+‘T12:00:00’), t=new Date(); t.setHours(0,0,0,0);
+var diff=Math.floor((d-t)/86400000);
+if (diff<0)   return {label:‘Overdue’,      color:’#ef4444’};
+if (diff===0) return {label:‘Due today’,    color:’#f59e0b’};
+if (diff===1) return {label:‘Due tomorrow’, color:’#f59e0b’};
+return {label:‘Due ‘+d.toLocaleDateString(‘en-AU’,{day:‘numeric’,month:‘short’}), color:’#78716c’};
+} catch(e){return null;}
 }
-
 function weekRange(offset) {
-var today = new Date();
-var dow = today.getDay();
-var toMon = dow === 0 ? -6 : 1 - dow;
-var mon = new Date(today);
-mon.setDate(today.getDate() + toMon + offset * 7);
-mon.setHours(0,0,0,0);
-var sun = new Date(mon);
-sun.setDate(mon.getDate() + 6);
-sun.setHours(23,59,59,999);
+var today=new Date(), dow=today.getDay();
+var mon=new Date(today); mon.setDate(today.getDate()+(dow===0?-6:1-dow)+offset*7); mon.setHours(0,0,0,0);
+var sun=new Date(mon); sun.setDate(mon.getDate()+6); sun.setHours(23,59,59,999);
 return {start:mon, end:sun};
 }
-
 function weekDates(offset) {
-var r = weekRange(offset);
-var dates = [];
-for (var i = 0; i < 7; i++) {
-var d = new Date(r.start);
-d.setDate(r.start.getDate() + i);
-dates.push(d.toISOString().slice(0, 10));
-}
+var r=weekRange(offset), dates=[];
+for (var i=0;i<7;i++) { var d=new Date(r.start); d.setDate(r.start.getDate()+i); dates.push(d.toISOString().slice(0,10)); }
 return dates;
 }
-
-function filterWeek(evs, offset) {
-var r = weekRange(offset);
+function filterWeek(evs,offset) {
+var r=weekRange(offset);
 return evs.filter(function(ev) {
-try {
-var iso = ev.start;
-var d = new Date(iso.length === 10 ? iso + ‘T00:00:00’ : iso);
-return d >= r.start && d <= r.end;
-} catch(e) { return false; }
+try { var iso=ev.start, d=new Date(iso.length===10?iso+‘T00:00:00’:iso); return d>=r.start&&d<=r.end; } catch(e){return false;}
 });
 }
+function getList(id) { for(var i=0;i<LISTS.length;i++){if(LISTS[i].id===id)return LISTS[i];} return LISTS[0]; }
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 function saveId(id) {
-try { localStorage.setItem(‘momentum_cid’, id); } catch(e) {}
-try { sessionStorage.setItem(‘momentum_cid’, id); } catch(e) {}
-try { document.cookie = ‘mcid=’ + encodeURIComponent(id) + ‘;max-age=31536000;path=/;SameSite=Lax’; } catch(e) {}
+try{localStorage.setItem(‘momentum_cid’,id);}catch(e){}
+try{sessionStorage.setItem(‘momentum_cid’,id);}catch(e){}
+try{document.cookie=‘mcid=’+encodeURIComponent(id)+’;max-age=31536000;path=/;SameSite=Lax’;}catch(e){}
 }
 function loadId() {
-try { var v = localStorage.getItem(‘momentum_cid’); if (v) return v; } catch(e) {}
-try { var v = sessionStorage.getItem(‘momentum_cid’); if (v) return v; } catch(e) {}
-try { var m = document.cookie.match(/mcid=([^;]+)/); if (m) return decodeURIComponent(m[1]); } catch(e) {}
+try{var v=localStorage.getItem(‘momentum_cid’);if(v)return v;}catch(e){}
+try{var v=sessionStorage.getItem(‘momentum_cid’);if(v)return v;}catch(e){}
+try{var m=document.cookie.match(/mcid=([^;]+)/);if(m)return decodeURIComponent(m[1]);}catch(e){}
 return ‘’;
 }
 function clearId() {
-try { localStorage.removeItem(‘momentum_cid’); } catch(e) {}
-try { sessionStorage.removeItem(‘momentum_cid’); } catch(e) {}
-try { document.cookie = ‘mcid=;max-age=0;path=/’; } catch(e) {}
+try{localStorage.removeItem(‘momentum_cid’);}catch(e){}
+try{sessionStorage.removeItem(‘momentum_cid’);}catch(e){}
+try{document.cookie=‘mcid=;max-age=0;path=/’;}catch(e){}
 }
-function saveTasks(tasks) {
-try { localStorage.setItem(‘momentum_tasks’, JSON.stringify(tasks)); } catch(e) {}
-}
-function loadTasks() {
-try { return JSON.parse(localStorage.getItem(‘momentum_tasks’) || ‘[]’); } catch(e) { return []; }
-}
+function saveTasks(t) { try{localStorage.setItem(‘momentum_tasks’,JSON.stringify(t));}catch(e){} }
+function loadTasks() { try{return JSON.parse(localStorage.getItem(‘momentum_tasks’)||’[]’);}catch(e){return [];} }
 
 // ── Task Reducer ──────────────────────────────────────────────────────────────
-var _tid = 1000;
-function uid() { return String(++_tid); }
-
-function taskReducer(tasks, action) {
+var _tid=1000;
+function uid(){return String(++_tid);}
+function taskReducer(tasks,action) {
 var next;
-if (action.type === ‘TOGGLE’) {
-next = tasks.map(function(t) { return t.id === action.id ? Object.assign({}, t, {done: !t.done}) : t; });
-} else if (action.type === ‘DELETE’) {
-next = tasks.filter(function(t) { return t.id !== action.id; });
-} else if (action.type === ‘ADD’) {
-next = tasks.concat([action.task]);
-} else if (action.type === ‘EDIT’) {
-next = tasks.map(function(t) { return t.id === action.id ? Object.assign({}, t, {title: action.title}) : t; });
-} else if (action.type === ‘EDIT_NOTES’) {
-next = tasks.map(function(t) { return t.id === action.id ? Object.assign({}, t, {notes: action.notes}) : t; });
-} else {
-next = tasks;
-}
+if      (action.type===‘TOGGLE’)     next=tasks.map(function(t){return t.id===action.id?Object.assign({},t,{done:!t.done}):t;});
+else if (action.type===‘DELETE’)     next=tasks.filter(function(t){return t.id!==action.id;});
+else if (action.type===‘ADD’)        next=tasks.concat([action.task]);
+else if (action.type===‘EDIT’)       next=tasks.map(function(t){return t.id===action.id?Object.assign({},t,{title:action.title}):t;});
+else if (action.type===‘EDIT_NOTES’) next=tasks.map(function(t){return t.id===action.id?Object.assign({},t,{notes:action.notes}):t;});
+else next=tasks;
 saveTasks(next);
 return next;
 }
 
 // ── Calendar API ──────────────────────────────────────────────────────────────
 async function fetchCal(token) {
-var now = new Date();
-var end = new Date(now.getTime() + 28 * 24 * 3600000);
-var p = new URLSearchParams({
-timeMin: now.toISOString(),
-timeMax: end.toISOString(),
-singleEvents: ‘true’,
-orderBy: ‘startTime’,
-maxResults: ‘100’,
-});
-var ctrl = new AbortController();
-var timer = setTimeout(function() { ctrl.abort(); }, 10000);
+var now=new Date(), end=new Date(now.getTime()+28*24*3600000);
+var p=new URLSearchParams({timeMin:now.toISOString(),timeMax:end.toISOString(),singleEvents:‘true’,orderBy:‘startTime’,maxResults:‘100’});
+var ctrl=new AbortController();
+var timer=setTimeout(function(){ctrl.abort();},10000);
 try {
-var res = await fetch(CAL_API + ‘?’ + p, {
-headers: { Authorization: ’Bearer ’ + token },
-signal: ctrl.signal,
-});
+var res=await fetch(CAL_API+’?’+p,{headers:{Authorization:‘Bearer ‘+token},signal:ctrl.signal});
 clearTimeout(timer);
-if (res.status === 401) throw new Error(‘TOKEN_EXPIRED’);
-if (!res.ok) throw new Error(’Calendar error ’ + res.status);
-var data = await res.json();
-return (data.items || []).map(function(item) {
-return {
-id:       item.id,
-title:    item.summary || ‘Untitled’,
-start:    (item.start && (item.start.dateTime || item.start.date)) || ‘’,
-end:      (item.end   && (item.end.dateTime   || item.end.date))   || ‘’,
-allDay:   !(item.start && item.start.dateTime),
-location: item.location || ‘’,
-cat:      detectCat(item.summary || ‘’),
-};
+if (res.status===401) throw new Error(‘TOKEN_EXPIRED’);
+if (!res.ok) throw new Error(‘Calendar error ‘+res.status);
+var data=await res.json();
+return (data.items||[]).map(function(item){
+return {id:item.id, title:item.summary||‘Untitled’,
+start:(item.start&&(item.start.dateTime||item.start.date))||’’,
+end:(item.end&&(item.end.dateTime||item.end.date))||’’,
+allDay:!(item.start&&item.start.dateTime), location:item.location||’’, cat:detectCat(item.summary||’’)};
 });
-} catch(e) {
-clearTimeout(timer);
-if (e.name === ‘AbortError’) throw new Error(‘Request timed out.’);
-throw e;
-}
+} catch(e){clearTimeout(timer); if(e.name===‘AbortError’) throw new Error(‘Request timed out.’); throw e;}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SETUP SCREEN
+// SETUP
 // ─────────────────────────────────────────────────────────────────────────────
 function SetupScreen(props) {
-var onSave = props.onSave;
-var step    = useState(1);
-var setStep = step[1]; step = step[0];
-var cid     = useState(’’);
-var setCid  = cid[1]; cid = cid[0];
-
-var steps = [
-{t:‘Create Google Cloud Project’,    b:‘Go to console.cloud.google.com, click New Project, name it Momentum.’},
-{t:‘Enable Calendar API’,            b:‘APIs and Services > Library > Search Google Calendar API > Enable.’},
-{t:‘OAuth Consent Screen’,           b:‘APIs and Services > OAuth consent screen > External > Create. Add your Gmail as a test user.’},
-{t:‘Create OAuth Credentials’,       b:‘Credentials > Create Credentials > OAuth client ID > Web application. Add authorised origin: https://josette0714-code.github.io’},
-{t:‘Paste your Client ID’,           b:‘Copy the Client ID from Google Cloud and paste it below.’},
+var s=useState(1); var step=s[0]; var setStep=s[1];
+var c=useState(’’); var cid=c[0]; var setCid=c[1];
+var steps=[
+{t:‘Create Google Cloud Project’, b:‘Go to console.cloud.google.com, click New Project, name it Momentum.’},
+{t:‘Enable Calendar API’,         b:‘APIs & Services > Library > Google Calendar API > Enable.’},
+{t:‘OAuth Consent Screen’,        b:‘APIs & Services > OAuth consent screen > External > Create. Add your Gmail as a test user.’},
+{t:‘Create OAuth Credentials’,    b:‘Credentials > Create Credentials > OAuth client ID > Web application. Add authorised origin: https://josette0714-code.github.io’},
+{t:‘Paste your Client ID’,        b:‘Copy the Client ID from Google Cloud and paste it below.’},
 ];
-
 return (
 <div style={{minHeight:‘100vh’,background:’#f5f3ee’,display:‘flex’,alignItems:‘center’,justifyContent:‘center’,padding:‘24px’}}>
-<div style={{maxWidth:‘520px’,width:‘100%’}}>
-<div style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘24px’,fontWeight:‘700’,marginBottom:‘8px’}}>Momentum</div>
-<div style={{fontSize:‘12px’,color:’#78716c’,marginBottom:‘24px’,textTransform:‘uppercase’,letterSpacing:’.6px’}}>Setup — Step {step} of {steps.length}</div>
-
-```
-    <div style={{background:'#fff',borderRadius:'14px',padding:'24px',border:'1px solid #ede9e3',marginBottom:'16px'}}>
-      <div style={{fontSize:'16px',fontWeight:'600',color:'#1c1917',marginBottom:'12px'}}>{steps[step-1].t}</div>
-      <div style={{fontSize:'14px',color:'#44403c',lineHeight:'1.6'}}>{steps[step-1].b}</div>
-      {step === 5 && (
-        <div style={{marginTop:'16px'}}>
-          <input type="text" value={cid} onChange={function(e){setCid(e.target.value);}}
-            placeholder="xxxxxxxx.apps.googleusercontent.com"
-            style={{width:'100%',padding:'10px',borderRadius:'8px',border:'1px solid #d6d0c6',fontSize:'13px'}} />
-        </div>
-      )}
-    </div>
-
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-      <button disabled={step===1} onClick={function(){setStep(step-1);}}
-        style={{padding:'8px 18px',borderRadius:'8px',border:'1px solid #ede9e3',background:'#fff',color:step===1?'#d6d0c6':'#78716c',cursor:step===1?'default':'pointer',fontSize:'13px'}}>
-        Back
-      </button>
-      {step < 5
-        ? <button onClick={function(){setStep(step+1);}}
-            style={{padding:'8px 20px',borderRadius:'8px',border:'none',background:'#1c1917',color:'#fff',cursor:'pointer',fontSize:'13px'}}>
-            Next
-          </button>
-        : <button disabled={!cid.trim()} onClick={function(){if(cid.trim())onSave(cid.trim());}}
-            style={{padding:'8px 20px',borderRadius:'8px',border:'none',background:cid.trim()?'#1c1917':'#d6d0c6',color:'#fff',cursor:cid.trim()?'pointer':'default',fontSize:'13px'}}>
-            Save
-          </button>
-      }
-    </div>
-  </div>
+<div style={{maxWidth:‘500px’,width:‘100%’}}>
+<div style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘24px’,fontWeight:‘700’,marginBottom:‘6px’}}>Momentum</div>
+<div style={{fontSize:‘12px’,color:’#78716c’,marginBottom:‘22px’}}>Setup — Step {step} of {steps.length}</div>
+<div style={{background:’#fff’,borderRadius:‘14px’,padding:‘22px’,border:‘1px solid #ede9e3’,marginBottom:‘14px’}}>
+<div style={{fontSize:‘16px’,fontWeight:‘600’,marginBottom:‘10px’}}>{steps[step-1].t}</div>
+<div style={{fontSize:‘14px’,color:’#44403c’,lineHeight:‘1.6’}}>{steps[step-1].b}</div>
+{step===5 && <input type=“text” value={cid} onChange={function(e){setCid(e.target.value);}} placeholder=“xxxxxxxx.apps.googleusercontent.com” style={{width:‘100%’,marginTop:‘14px’,padding:‘10px’,borderRadius:‘8px’,border:‘1px solid #d6d0c6’,fontSize:‘13px’}} />}
 </div>
-```
-
+<div style={{display:‘flex’,justifyContent:‘space-between’}}>
+<button disabled={step===1} onClick={function(){setStep(step-1);}} style={{padding:‘8px 18px’,borderRadius:‘8px’,border:‘1px solid #ede9e3’,background:’#fff’,color:step===1?’#d6d0c6’:’#78716c’,cursor:step===1?‘default’:‘pointer’,fontSize:‘13px’}}>Back</button>
+{step<5
+? <button onClick={function(){setStep(step+1);}} style={{padding:‘8px 20px’,borderRadius:‘8px’,border:‘none’,background:’#1c1917’,color:’#fff’,cursor:‘pointer’,fontSize:‘13px’}}>Next</button>
+: <button disabled={!cid.trim()} onClick={function(){if(cid.trim())props.onSave(cid.trim());}} style={{padding:‘8px 20px’,borderRadius:‘8px’,border:‘none’,background:cid.trim()?’#1c1917’:’#d6d0c6’,color:’#fff’,cursor:cid.trim()?‘pointer’:‘default’,fontSize:‘13px’}}>Save</button>
+}
+</div>
+</div>
+</div>
 );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AUTH SCREEN
+// AUTH
 // ─────────────────────────────────────────────────────────────────────────────
 function AuthScreen(props) {
-var onReset = props.onReset;
-var err     = props.err;
 return (
 <div style={{minHeight:‘100vh’,background:’#f5f3ee’,display:‘flex’,alignItems:‘center’,justifyContent:‘center’}}>
-<div style={{textAlign:‘center’,padding:‘40px 24px’,maxWidth:‘320px’}}>
+<div style={{textAlign:‘center’,padding:‘40px 24px’,maxWidth:‘300px’}}>
 <div style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘28px’,fontWeight:‘700’,marginBottom:‘6px’}}>Momentum</div>
-{err && <div style={{background:’#fee2e2’,border:‘1px solid #fca5a5’,borderRadius:‘8px’,padding:‘10px’,fontSize:‘13px’,color:’#dc2626’,marginBottom:‘16px’}}>{err}</div>}
+{props.err && <div style={{background:’#fee2e2’,border:‘1px solid #fca5a5’,borderRadius:‘8px’,padding:‘10px’,fontSize:‘13px’,color:’#dc2626’,marginBottom:‘14px’}}>{props.err}</div>}
 <div style={{display:‘flex’,flexDirection:‘column’,alignItems:‘center’,gap:‘10px’,marginTop:‘20px’}}>
 <span className="spinner"></span>
 <p style={{fontSize:‘13px’,color:’#78716c’}}>Signing you in…</p>
 </div>
-<button onClick={onReset}
-style={{marginTop:‘20px’,fontSize:‘11px’,color:’#a8a29e’,background:‘none’,border:‘none’,cursor:‘pointer’,textDecoration:‘underline’}}>
-Change Client ID
-</button>
+<button onClick={props.onReset} style={{marginTop:‘20px’,fontSize:‘11px’,color:’#a8a29e’,background:‘none’,border:‘none’,cursor:‘pointer’,textDecoration:‘underline’}}>Change Client ID</button>
 </div>
 </div>
 );
@@ -317,30 +221,23 @@ Change Client ID
 // CALENDAR COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 function EvCard(props) {
-var ev  = props.ev;
-var idx = props.idx;
-var c   = CAT[ev.cat] || CAT.personal;
-var t1  = ftime(ev.start);
-var t2  = ftime(ev.end);
-var timeStr = ev.allDay ? ‘All day’ : (t1 + (t2 ? ’ to ’ + t2 : ‘’));
+var ev=props.ev, idx=props.idx;
+var c=CAT[ev.cat]||CAT.personal;
+var t1=ftime(ev.start), t2=ftime(ev.end);
+var timeStr=ev.allDay?‘All day’:(t1+(t2?’ to ‘+t2:’’));
 return (
 <div className=“fade” style={{display:‘flex’,background:’#fff’,borderRadius:‘10px’,border:‘1px solid #ede9e3’,overflow:‘hidden’,boxShadow:‘0 1px 4px rgba(0,0,0,.05)’,animationDelay:(idx*20)+‘ms’,marginBottom:‘6px’}}>
 <div style={{width:‘4px’,background:c.color,flexShrink:‘0’}}></div>
 <div style={{flex:‘1’,padding:‘10px 14px’,display:‘flex’,alignItems:‘center’,gap:‘10px’}}>
-<div style={{width:‘32px’,height:‘32px’,borderRadius:‘8px’,background:c.bg,display:‘flex’,alignItems:‘center’,justifyContent:‘center’,fontSize:‘16px’,flexShrink:‘0’}}>
-{c.icon}
-</div>
+<div style={{width:‘32px’,height:‘32px’,borderRadius:‘8px’,background:c.bg,display:‘flex’,alignItems:‘center’,justifyContent:‘center’,fontSize:‘16px’,flexShrink:‘0’}}>{c.icon}</div>
 <div style={{flex:‘1’,minWidth:‘0’}}>
 <div style={{fontSize:‘13px’,fontWeight:‘500’,color:’#1c1917’,overflow:‘hidden’,textOverflow:‘ellipsis’,whiteSpace:‘nowrap’}}>{ev.title}</div>
-{ev.location ? <div style={{fontSize:‘11px’,color:’#78716c’,marginTop:‘1px’}}>{‘📍 ’ + ev.location}</div> : null}
+{ev.location ? <div style={{fontSize:‘11px’,color:’#78716c’,marginTop:‘1px’}}>{‘📍 ‘+ev.location}</div> : null}
 </div>
 <div style={{textAlign:‘right’,flexShrink:‘0’}}>
 {ev.allDay
 ? <span style={{fontSize:‘11px’,fontWeight:‘500’,color:c.color,background:c.bg,borderRadius:‘5px’,padding:‘2px 8px’}}>All day</span>
-: <div>
-<div style={{fontSize:‘13px’,fontWeight:‘600’,color:’#1c1917’}}>{t1}</div>
-{t2 ? <div style={{fontSize:‘11px’,color:’#a8a29e’}}>{’to ’ + t2}</div> : null}
-</div>
+: <div><div style={{fontSize:‘13px’,fontWeight:‘600’,color:’#1c1917’}}>{t1}</div>{t2?<div style={{fontSize:‘11px’,color:’#a8a29e’}}>{’to ’+t2}</div>:null}</div>
 }
 </div>
 </div>
@@ -349,12 +246,9 @@ return (
 }
 
 function TaskPill(props) {
-var task = props.task;
-var list = null;
-for (var i = 0; i < LISTS.length; i++) { if (LISTS[i].id === task.list) { list = LISTS[i]; break; } }
-if (!list) list = LISTS[0];
+var task=props.task, list=getList(task.list);
 return (
-<div style={{display:‘flex’,alignItems:‘center’,gap:‘8px’,padding:‘6px 10px’,borderRadius:‘8px’,background:’#fff’,border:‘1px dashed ’ + list.color + ‘80’,marginBottom:‘5px’}}>
+<div style={{display:‘flex’,alignItems:‘center’,gap:‘8px’,padding:‘6px 10px’,borderRadius:‘8px’,background:’#fff’,border:‘1px dashed ‘+list.color+‘80’,marginBottom:‘5px’}}>
 <div style={{width:‘3px’,height:‘18px’,borderRadius:‘2px’,background:list.color,flexShrink:‘0’}}></div>
 <span style={{fontSize:‘13px’}}>{list.icon}</span>
 <span style={{fontSize:‘12px’,color:’#44403c’,flex:‘1’,minWidth:‘0’,overflow:‘hidden’,textOverflow:‘ellipsis’,whiteSpace:‘nowrap’}}>{task.title}</span>
@@ -364,110 +258,63 @@ return (
 }
 
 function DayGroup(props) {
-var dateStr = props.dateStr;
-var evs     = props.evs;
-var tasks   = props.tasks;
-var today   = istoday(dateStr);
-var dayTasks = (tasks || []).filter(function(t) { return !t.done && t.due === dateStr; });
-var total    = evs.length + dayTasks.length;
+var dateStr=props.dateStr, evs=props.evs, tasks=props.tasks;
+var today=istoday(dateStr);
+var dayTasks=(tasks||[]).filter(function(t){return !t.done&&t.due===dateStr;});
+var total=evs.length+dayTasks.length;
 return (
 <div style={{marginBottom:‘18px’}}>
 <div style={{display:‘flex’,alignItems:‘center’,gap:‘8px’,marginBottom:‘8px’}}>
 <span style={{fontSize:‘11px’,fontWeight:‘600’,textTransform:‘uppercase’,letterSpacing:’.8px’,color:today?’#0ea5e9’:’#78716c’}}>{fdayfull(dateStr)}</span>
-{today ? <span style={{fontSize:‘10px’,fontWeight:‘600’,color:’#fff’,background:’#0ea5e9’,borderRadius:‘4px’,padding:‘1px 6px’}}>Today</span> : null}
+{today?<span style={{fontSize:‘10px’,fontWeight:‘600’,color:’#fff’,background:’#0ea5e9’,borderRadius:‘4px’,padding:‘1px 6px’}}>Today</span>:null}
 <div style={{flex:‘1’,height:‘1px’,background:’#ede9e3’}}></div>
-<span style={{fontSize:‘11px’,color:’#a8a29e’}}>{total + ’ item’ + (total !== 1 ? ‘s’ : ‘’)}</span>
+<span style={{fontSize:‘11px’,color:’#a8a29e’}}>{total+’ item’+(total!==1?‘s’:’’)}</span>
 </div>
 <div>
-{evs.map(function(ev, i) { return <EvCard key={ev.id} ev={ev} idx={i} />; })}
-{dayTasks.map(function(t) { return <TaskPill key={t.id} task={t} />; })}
+{evs.map(function(ev,i){return <EvCard key={ev.id} ev={ev} idx={i} />;  })}
+{dayTasks.map(function(t){return <TaskPill key={t.id} task={t} />;  })}
 </div>
 </div>
 );
 }
 
 function CalSidebar(props) {
-var events  = props.events;
-var nextFlight = null;
-var now = new Date();
-for (var i = 0; i < events.length; i++) {
-if (events[i].cat === ‘travel’ && !events[i].allDay && new Date(events[i].start) > now) {
-nextFlight = events[i]; break;
-}
-}
-var catMap = {};
-events.forEach(function(ev) { catMap[ev.cat] = (catMap[ev.cat] || 0) + 1; });
-var catEntries = Object.keys(catMap).map(function(k) { return [k, catMap[k]]; });
-var rThis = weekRange(0); var rNext = weekRange(1);
-var thisCount = filterWeek(events, 0).length;
-var nextCount = filterWeek(events, 1).length;
-
+var events=props.events;
+var now=new Date(), nextFlight=null;
+for (var i=0;i<events.length;i++){if(events[i].cat===‘travel’&&!events[i].allDay&&new Date(events[i].start)>now){nextFlight=events[i];break;}}
+var catMap={};
+events.forEach(function(ev){catMap[ev.cat]=(catMap[ev.cat]||0)+1;});
+var catEntries=Object.keys(catMap).map(function(k){return [k,catMap[k]];});
+var r0=weekRange(0),r1=weekRange(1);
 return (
 <div style={{display:‘flex’,flexDirection:‘column’,gap:‘13px’}}>
 <div style={{background:’#1c1917’,borderRadius:‘14px’,padding:‘18px’,color:’#fafaf7’}}>
 <div style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘19px’,fontWeight:‘700’,marginBottom:‘4px’}}>Calendar</div>
 <div style={{fontSize:‘11px’,color:’#a8a29e’,marginBottom:‘13px’}}>{new Date().toLocaleDateString(‘en-AU’,{weekday:‘long’,day:‘numeric’,month:‘long’})}</div>
 <div style={{display:‘grid’,gridTemplateColumns:‘1fr 1fr’,gap:‘7px’}}>
-{[[‘This week’,thisCount],[‘Next week’,nextCount],[‘Flights’,events.filter(function(e){return e.cat===‘travel’&&!e.allDay;}).length],[‘Total’,events.length]].map(function(pair) {
-return (
-<div key={pair[0]} style={{background:‘rgba(255,255,255,.07)’,borderRadius:‘8px’,padding:‘8px 10px’}}>
-<div style={{fontSize:‘18px’,fontWeight:‘600’}}>{pair[1]}</div>
-<div style={{fontSize:‘10px’,color:’#a8a29e’,textTransform:‘uppercase’,letterSpacing:’.5px’}}>{pair[0]}</div>
-</div>
-);
+{[[‘This week’,filterWeek(events,0).length],[‘Next week’,filterWeek(events,1).length],[‘Flights’,events.filter(function(e){return e.cat===‘travel’&&!e.allDay;}).length],[‘Total’,events.length]].map(function(p){
+return <div key={p[0]} style={{background:‘rgba(255,255,255,.07)’,borderRadius:‘8px’,padding:‘8px 10px’}}><div style={{fontSize:‘18px’,fontWeight:‘600’}}>{p[1]}</div><div style={{fontSize:‘10px’,color:’#a8a29e’,textTransform:‘uppercase’,letterSpacing:’.5px’}}>{p[0]}</div></div>;
 })}
 </div>
 </div>
-{nextFlight ? (
-<div style={{background:’#e0f2fe’,border:‘1px solid #bae6fd’,borderRadius:‘12px’,padding:‘12px 14px’}}>
-<div style={{fontSize:‘10px’,fontWeight:‘600’,color:’#0ea5e9’,textTransform:‘uppercase’,letterSpacing:’.8px’,marginBottom:‘4px’}}>Next Flight</div>
-<div style={{fontSize:‘13px’,fontWeight:‘600’,color:’#0c4a6e’,marginBottom:‘2px’}}>{nextFlight.title}</div>
-<div style={{fontSize:‘11px’,color:’#0369a1’}}>{fdayfull(dkey(nextFlight.start)) + ’ · ’ + ftime(nextFlight.start)}</div>
-</div>
-) : null}
-{catEntries.length > 0 ? (
-<div style={{background:’#fff’,borderRadius:‘12px’,border:‘1px solid #ede9e3’,padding:‘12px 14px’}}>
-<div style={{fontSize:‘11px’,fontWeight:‘600’,color:’#78716c’,textTransform:‘uppercase’,letterSpacing:’.8px’,marginBottom:‘10px’}}>Categories</div>
-{catEntries.map(function(entry) {
-var c = CAT[entry[0]]; if (!c) return null;
-var pct = Math.round(entry[1] / events.length * 100);
-return (
-<div key={entry[0]} style={{marginBottom:‘8px’}}>
-<div style={{display:‘flex’,justifyContent:‘space-between’,marginBottom:‘2px’}}>
-<span style={{fontSize:‘12px’,color:’#1c1917’}}>{c.icon + ’ ’ + c.label}</span>
-<span style={{fontSize:‘11px’,color:’#78716c’}}>{entry[1]}</span>
-</div>
-<div style={{height:‘3px’,background:’#f5f3ee’,borderRadius:‘2px’}}>
-<div style={{height:‘100%’,width:pct+’%’,background:c.color,borderRadius:‘2px’}}></div>
-</div>
-</div>
-);
-})}
-</div>
-) : null}
+{nextFlight?<div style={{background:’#e0f2fe’,border:‘1px solid #bae6fd’,borderRadius:‘12px’,padding:‘12px 14px’}}><div style={{fontSize:‘10px’,fontWeight:‘600’,color:’#0ea5e9’,textTransform:‘uppercase’,letterSpacing:’.8px’,marginBottom:‘4px’}}>Next Flight</div><div style={{fontSize:‘13px’,fontWeight:‘600’,color:’#0c4a6e’,marginBottom:‘2px’}}>{nextFlight.title}</div><div style={{fontSize:‘11px’,color:’#0369a1’}}>{fdayfull(dkey(nextFlight.start))+’ · ‘+ftime(nextFlight.start)}</div></div>:null}
+{catEntries.length>0?<div style={{background:’#fff’,borderRadius:‘12px’,border:‘1px solid #ede9e3’,padding:‘12px 14px’}}><div style={{fontSize:‘11px’,fontWeight:‘600’,color:’#78716c’,textTransform:‘uppercase’,letterSpacing:’.8px’,marginBottom:‘10px’}}>Categories</div>{catEntries.map(function(e){var c=CAT[e[0]];if(!c)return null;var pct=Math.round(e[1]/events.length*100);return <div key={e[0]} style={{marginBottom:‘8px’}}><div style={{display:‘flex’,justifyContent:‘space-between’,marginBottom:‘2px’}}><span style={{fontSize:‘12px’,color:’#1c1917’}}>{c.icon+’ ‘+c.label}</span><span style={{fontSize:‘11px’,color:’#78716c’}}>{e[1]}</span></div><div style={{height:‘3px’,background:’#f5f3ee’,borderRadius:‘2px’}}><div style={{height:‘100%’,width:pct+’%’,background:c.color,borderRadius:‘2px’}}></div></div></div>; })}</div>:null}
 </div>
 );
 }
 
 function CalendarView(props) {
-var events     = props.events;
-var tasks      = props.tasks;
-var onRefresh  = props.onRefresh;
-var refreshing = props.refreshing;
-var wtab = useState(0); var setWtab = wtab[1]; wtab = wtab[0];
-
-var r        = weekRange(wtab);
-var wdates   = weekDates(wtab);
-var wevs     = filterWeek(events, wtab);
-var evDates  = wevs.map(function(e) { return dkey(e.start); });
-var tkDates  = wdates.filter(function(d) {
-return (tasks || []).some(function(t) { return !t.done && t.due === d; });
-});
-var allDates = [];
-var seen = {};
-evDates.concat(tkDates).forEach(function(d) { if (!seen[d]) { seen[d] = true; allDates.push(d); } });
+var events=props.events, tasks=props.tasks, onRefresh=props.onRefresh, refreshing=props.refreshing;
+var ws=useState(0); var wtab=ws[0]; var setWtab=ws[1];
+var r=weekRange(wtab);
+var wevs=filterWeek(events,wtab);
+var wdates=weekDates(wtab);
+var seen={}, allDates=[];
+wevs.map(function(e){return dkey(e.start);}).concat(
+wdates.filter(function(d){return (tasks||[]).some(function(t){return !t.done&&t.due===d;});})
+).forEach(function(d){if(!seen[d]){seen[d]=true;allDates.push(d);}});
 allDates.sort();
-var noDue = (tasks || []).filter(function(t) { return !t.done && !t.due; });
+var noDue=(tasks||[]).filter(function(t){return !t.done&&!t.due;});
 
 return (
 <div style={{display:‘grid’,gridTemplateColumns:‘1fr 260px’,gap:‘22px’,alignItems:‘start’}}>
@@ -476,50 +323,30 @@ return (
 <div style={{display:‘flex’,alignItems:‘center’,justifyContent:‘space-between’,marginBottom:‘10px’}}>
 <h1 style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘26px’,fontWeight:‘700’,color:’#1c1917’}}>
 {WEEK_LABELS[wtab]}
-<span style={{fontSize:‘13px’,fontWeight:‘400’,color:’#a8a29e’,marginLeft:‘8px’}}>{fshort(r.start) + ’ – ’ + fshort(r.end)}</span>
+<span style={{fontSize:‘13px’,fontWeight:‘400’,color:’#a8a29e’,marginLeft:‘8px’}}>{fshort(r.start)+’ – ‘+fshort(r.end)}</span>
 </h1>
-<button onClick={onRefresh} disabled={refreshing}
-style={{display:‘flex’,alignItems:‘center’,gap:‘5px’,padding:‘5px 12px’,borderRadius:‘18px’,border:‘1px solid #ede9e3’,background:refreshing?’#f5f3ee’:’#fff’,color:’#78716c’,fontSize:‘12px’,cursor:‘pointer’}}>
-{refreshing ? <span className=“spinner” style={{width:‘13px’,height:‘13px’}}></span> : ‘🔄’}
-{refreshing ? ‘Refreshing…’ : ‘Refresh’}
+<button onClick={onRefresh} disabled={refreshing} style={{display:‘flex’,alignItems:‘center’,gap:‘5px’,padding:‘5px 12px’,borderRadius:‘18px’,border:‘1px solid #ede9e3’,background:refreshing?’#f5f3ee’:’#fff’,color:’#78716c’,fontSize:‘12px’,cursor:‘pointer’}}>
+{refreshing?<span className=“spinner” style={{width:‘13px’,height:‘13px’}}></span>:‘🔄’}
+{refreshing?‘Refreshing…’:‘Refresh’}
 </button>
 </div>
 <div style={{display:‘flex’,gap:‘3px’,background:’#ede9e3’,borderRadius:‘8px’,padding:‘3px’,width:‘fit-content’}}>
-{WEEK_LABELS.map(function(label, v) {
-return (
-<button key={v} onClick={function(){setWtab(v);}}
-style={{padding:‘5px 11px’,borderRadius:‘6px’,border:‘none’,fontSize:‘12px’,fontWeight:‘500’,cursor:‘pointer’,background:wtab===v?’#fff’:‘transparent’,color:wtab===v?’#1c1917’:’#78716c’,boxShadow:wtab===v?‘0 1px 4px rgba(0,0,0,.07)’:‘none’}}>
-{label}
-</button>
-);
+{WEEK_LABELS.map(function(label,v){
+var active=wtab===v;
+return <button key={v} onClick={function(){setWtab(v);}} style={{padding:‘5px 11px’,borderRadius:‘6px’,border:‘none’,fontSize:‘12px’,fontWeight:‘500’,cursor:‘pointer’,background:active?’#fff’:‘transparent’,color:active?’#1c1917’:’#78716c’,boxShadow:active?‘0 1px 4px rgba(0,0,0,.07)’:‘none’}}>{label}</button>;
 })}
 </div>
 </div>
-
-```
-    {allDates.length === 0 && noDue.length === 0
-      ? <div style={{textAlign:'center',padding:'50px 0',color:'#a8a29e',fontSize:'14px'}}>Nothing scheduled for {WEEK_LABELS[wtab].toLowerCase()}.</div>
-      : <div>
-          {allDates.map(function(d) {
-            var evs = wevs.filter(function(ev) { return dkey(ev.start) === d; });
-            return <DayGroup key={d} dateStr={d} evs={evs} tasks={tasks} />;
-          })}
-          {noDue.length > 0 ? (
-            <div style={{marginTop:'8px'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'8px'}}>
-                <span style={{fontSize:'11px',fontWeight:'600',textTransform:'uppercase',letterSpacing:'.8px',color:'#78716c'}}>Pending Tasks</span>
-                <div style={{flex:'1',height:'1px',background:'#ede9e3'}}></div>
-              </div>
-              {noDue.map(function(t) { return <TaskPill key={t.id} task={t} />; })}
-            </div>
-          ) : null}
-        </div>
-    }
-  </div>
-  <div style={{position:'sticky',top:'70px'}}><CalSidebar events={events} /></div>
+{allDates.length===0&&noDue.length===0
+? <div style={{textAlign:‘center’,padding:‘50px 0’,color:’#a8a29e’,fontSize:‘14px’}}>Nothing scheduled for {WEEK_LABELS[wtab].toLowerCase()}.</div>
+: <div>
+{allDates.map(function(d){var evs=wevs.filter(function(ev){return dkey(ev.start)===d;}); return <DayGroup key={d} dateStr={d} evs={evs} tasks={tasks} />;  })}
+{noDue.length>0?<div style={{marginTop:‘8px’}}><div style={{display:‘flex’,alignItems:‘center’,gap:‘8px’,marginBottom:‘8px’}}><span style={{fontSize:‘11px’,fontWeight:‘600’,textTransform:‘uppercase’,letterSpacing:’.8px’,color:’#78716c’}}>Pending Tasks</span><div style={{flex:‘1’,height:‘1px’,background:’#ede9e3’}}></div></div>{noDue.map(function(t){return <TaskPill key={t.id} task={t} />;})}</div>:null}
 </div>
-```
-
+}
+</div>
+<div style={{position:‘sticky’,top:‘70px’}}><CalSidebar events={events} /></div>
+</div>
 );
 }
 
@@ -527,125 +354,63 @@ style={{padding:‘5px 11px’,borderRadius:‘6px’,border:‘none’,fontSize
 // TASK COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 function TaskRow(props) {
-var task     = props.task;
-var dispatch = props.dispatch;
-var editing    = useState(false); var setEditing    = editing[1];    editing    = editing[0];
-var draft      = useState(task.title); var setDraft = draft[1];      draft      = draft[0];
-var editNotes  = useState(false); var setEditNotes  = editNotes[1];  editNotes  = editNotes[0];
-var notesDraft = useState(task.notes || ‘’); var setNotesDraft = notesDraft[1]; notesDraft = notesDraft[0];
-var titleRef   = useRef(null);
-var notesRef   = useRef(null);
-var due        = fdue(task.due);
+var task=props.task, dispatch=props.dispatch;
+var e1=useState(false); var editing=e1[0]; var setEditing=e1[1];
+var e2=useState(task.title); var draft=e2[0]; var setDraft=e2[1];
+var e3=useState(false); var editNotes=e3[0]; var setEditNotes=e3[1];
+var e4=useState(task.notes||’’); var notesDraft=e4[0]; var setNotesDraft=e4[1];
+var titleRef=useRef(null), notesRef=useRef(null);
+var due=fdue(task.due);
 
-useEffect(function() { if (editing   && titleRef.current) titleRef.current.focus(); }, [editing]);
-useEffect(function() { if (editNotes && notesRef.current) notesRef.current.focus(); }, [editNotes]);
+useEffect(function(){if(editing&&titleRef.current)titleRef.current.focus();},[editing]);
+useEffect(function(){if(editNotes&&notesRef.current)notesRef.current.focus();},[editNotes]);
 
-function saveTitle() {
-var t = draft.trim();
-if (t && t !== task.title) dispatch({type:‘EDIT’, id:task.id, title:t});
-else setDraft(task.title);
-setEditing(false);
-}
-function saveNotes() {
-dispatch({type:‘EDIT_NOTES’, id:task.id, notes:notesDraft.trim()});
-setEditNotes(false);
-}
+function saveTitle(){var t=draft.trim();if(t&&t!==task.title)dispatch({type:‘EDIT’,id:task.id,title:t});else setDraft(task.title);setEditing(false);}
+function saveNotes(){dispatch({type:‘EDIT_NOTES’,id:task.id,notes:notesDraft.trim()});setEditNotes(false);}
 
-var checkStyle = {
-width:‘19px’, height:‘19px’, borderRadius:‘5px’, flexShrink:‘0’, marginTop:‘2px’, cursor:‘pointer’,
-border:’2px solid ’ + (task.done ? ‘#d6d0c6’ : ‘#a8a29e’),
-background: task.done ? ‘#f5f3ee’ : ‘#fff’,
-display:‘flex’, alignItems:‘center’, justifyContent:‘center’,
-};
-var titleStyle = {
-fontSize:‘13px’, lineHeight:‘1.4’,
-color:       task.done ? ‘#a8a29e’ : ‘#1c1917’,
-textDecoration: task.done ? ‘line-through’ : ‘none’,
-cursor:      task.done ? ‘default’ : ‘text’,
-};
+var doneColor=task.done?’#a8a29e’:’#1c1917’;
+var doneDeco=task.done?‘line-through’:‘none’;
 
 return (
 <div className=“trow” style={{display:‘flex’,alignItems:‘flex-start’,gap:‘10px’,padding:‘10px 12px’,borderRadius:‘9px’,background:’#fff’,border:‘1px solid #ede9e3’,marginBottom:‘6px’,transition:‘background .1s’}}>
-<button onClick={function(){dispatch({type:‘TOGGLE’,id:task.id});}} style={checkStyle}>
-{task.done ? <span style={{fontSize:‘10px’,color:’#a8a29e’,fontWeight:‘700’}}>✓</span> : null}
+<button onClick={function(){dispatch({type:‘TOGGLE’,id:task.id});}} style={{width:‘19px’,height:‘19px’,borderRadius:‘5px’,flexShrink:‘0’,marginTop:‘2px’,cursor:‘pointer’,border:‘2px solid ‘+(task.done?’#d6d0c6’:’#a8a29e’),background:task.done?’#f5f3ee’:’#fff’,display:‘flex’,alignItems:‘center’,justifyContent:‘center’}}>
+{task.done?<span style={{fontSize:‘10px’,color:’#a8a29e’,fontWeight:‘700’}}>✓</span>:null}
 </button>
 <div style={{flex:‘1’,minWidth:‘0’}}>
 {editing
-? <input ref={titleRef} type=“text” value={draft}
-onChange={function(e){setDraft(e.target.value);}}
-onBlur={saveTitle}
-onKeyDown={function(e){if(e.key===‘Enter’)saveTitle();if(e.key===‘Escape’){setDraft(task.title);setEditing(false);}}}
-style={{width:‘100%’,border:‘none’,borderBottom:‘1px solid #a8a29e’,background:‘transparent’,fontSize:‘13px’,color:’#1c1917’,padding:‘2px 0’}} />
-: <div onDoubleClick={function(){if(!task.done){setDraft(task.title);setEditing(true);}}} style={titleStyle}>
-{task.title}
-</div>
+? <input ref={titleRef} type=“text” value={draft} onChange={function(e){setDraft(e.target.value);}} onBlur={saveTitle} onKeyDown={function(e){if(e.key===‘Enter’)saveTitle();if(e.key===‘Escape’){setDraft(task.title);setEditing(false);}}} style={{width:‘100%’,border:‘none’,borderBottom:‘1px solid #a8a29e’,background:‘transparent’,fontSize:‘13px’,color:’#1c1917’,padding:‘2px 0’}} />
+: <div onDoubleClick={function(){if(!task.done){setDraft(task.title);setEditing(true);}}} style={{fontSize:‘13px’,lineHeight:‘1.4’,color:doneColor,textDecoration:doneDeco,cursor:task.done?‘default’:‘text’}}>{task.title}</div>
 }
 {editNotes
-? <textarea ref={notesRef} value={notesDraft} rows={2}
-onChange={function(e){setNotesDraft(e.target.value);}}
-onBlur={saveNotes}
-placeholder=“Add a note…”
-style={{width:‘100%’,marginTop:‘5px’,border:‘1px solid #d6d0c6’,borderRadius:‘6px’,padding:‘5px 8px’,fontSize:‘12px’,color:’#44403c’,background:’#fafaf7’,resize:‘vertical’}} />
+? <textarea ref={notesRef} value={notesDraft} rows={2} onChange={function(e){setNotesDraft(e.target.value);}} onBlur={saveNotes} placeholder=“Add a note…” style={{width:‘100%’,marginTop:‘5px’,border:‘1px solid #d6d0c6’,borderRadius:‘6px’,padding:‘5px 8px’,fontSize:‘12px’,color:’#44403c’,background:’#fafaf7’,resize:‘vertical’}} />
 : <div>
 {task.notes
-? <div onClick={function(){if(!task.done){setNotesDraft(task.notes);setEditNotes(true);}}}
-style={{fontSize:‘12px’,color:’#78716c’,marginTop:‘3px’,lineHeight:‘1.5’,cursor:task.done?‘default’:‘text’,padding:‘3px 6px’,background:’#fafaf7’,borderRadius:‘5px’,border:‘1px solid #f0ece6’}}>
-{‘Note: ’ + task.notes}
-</div>
-: (!task.done
-? <button onClick={function(){setNotesDraft(’’);setEditNotes(true);}}
-style={{fontSize:‘11px’,color:’#c4b5a0’,background:‘none’,border:‘none’,cursor:‘pointer’,marginTop:‘2px’,padding:‘0’}}>
-+ add note
-</button>
-: null)
+? <div onClick={function(){if(!task.done){setNotesDraft(task.notes);setEditNotes(true);}}} style={{fontSize:‘12px’,color:’#78716c’,marginTop:‘3px’,lineHeight:‘1.5’,cursor:task.done?‘default’:‘text’,padding:‘3px 6px’,background:’#fafaf7’,borderRadius:‘5px’,border:‘1px solid #f0ece6’}}>{‘Note: ‘+task.notes}</div>
+: task.done?null:<button onClick={function(){setNotesDraft(’’);setEditNotes(true);}} style={{fontSize:‘11px’,color:’#c4b5a0’,background:‘none’,border:‘none’,cursor:‘pointer’,marginTop:‘2px’,padding:‘0’}}>+ add note</button>
 }
 </div>
 }
-{(due && !task.done)
-? <div style={{fontSize:‘11px’,color:due.color,fontWeight:‘500’,marginTop:‘3px’}}>{due.label}</div>
-: null
-}
+{due&&!task.done?<div style={{fontSize:‘11px’,color:due.color,fontWeight:‘500’,marginTop:‘3px’}}>{due.label}</div>:null}
 </div>
-<button className=“del” onClick={function(){dispatch({type:‘DELETE’,id:task.id});}}
-style={{opacity:‘0’,width:‘18px’,height:‘18px’,borderRadius:‘4px’,flexShrink:‘0’,cursor:‘pointer’,background:’#fee2e2’,color:’#ef4444’,border:‘none’,fontSize:‘11px’,display:‘flex’,alignItems:‘center’,justifyContent:‘center’,transition:‘opacity .15s’}}>
-✕
-</button>
+<button className=“del” onClick={function(){dispatch({type:‘DELETE’,id:task.id});}} style={{opacity:‘0’,width:‘18px’,height:‘18px’,borderRadius:‘4px’,flexShrink:‘0’,cursor:‘pointer’,background:’#fee2e2’,color:’#ef4444’,border:‘none’,fontSize:‘11px’,display:‘flex’,alignItems:‘center’,justifyContent:‘center’,transition:‘opacity .15s’}}>✕</button>
 </div>
 );
 }
 
 function AddForm(props) {
-var listId   = props.listId;
-var list     = props.list;
-var dispatch = props.dispatch;
-var onClose  = props.onClose;
-var title = useState(’’); var setTitle = title[1]; title = title[0];
-var notes = useState(’’); var setNotes = notes[1]; notes = notes[0];
-var due   = useState(’’); var setDue   = due[1];   due   = due[0];
-var ref = useRef(null);
-useEffect(function() { if (ref.current) ref.current.focus(); }, []);
-
-function submit() {
-var t = title.trim();
-if (!t) return;
-dispatch({type:‘ADD’, task:{id:uid(), list:listId, title:t, notes:notes.trim(), done:false, due:due||null}});
-setTitle(’’); setNotes(’’); setDue(’’); onClose();
-}
-
+var listId=props.listId, list=props.list, dispatch=props.dispatch, onClose=props.onClose;
+var t1=useState(’’); var title=t1[0]; var setTitle=t1[1];
+var t2=useState(’’); var notes=t2[0]; var setNotes=t2[1];
+var t3=useState(’’); var due=t3[0]; var setDue=t3[1];
+var ref=useRef(null);
+useEffect(function(){if(ref.current)ref.current.focus();},[]);
+function submit(){var t=title.trim();if(!t)return;dispatch({type:‘ADD’,task:{id:uid(),list:listId,title:t,notes:notes.trim(),done:false,due:due||null}});setTitle(’’);setNotes(’’);setDue(’’);onClose();}
 return (
 <div style={{background:list.bg,border:‘1px solid ‘+list.color+‘40’,borderRadius:‘10px’,padding:‘13px 14px’,marginBottom:‘12px’}}>
-<input ref={ref} type=“text” value={title}
-onChange={function(e){setTitle(e.target.value);}}
-onKeyDown={function(e){if(e.key===‘Enter’)submit();if(e.key===‘Escape’)onClose();}}
-placeholder=“Task title…”
-style={{width:‘100%’,border:‘none’,borderBottom:‘1px solid ‘+list.color+‘60’,background:‘transparent’,fontSize:‘14px’,color:’#1c1917’,padding:‘3px 0’,marginBottom:‘8px’}} />
-<textarea value={notes} rows={2}
-onChange={function(e){setNotes(e.target.value);}}
-placeholder=“Notes (optional)…”
-style={{width:‘100%’,border:‘1px solid ‘+list.color+‘40’,borderRadius:‘6px’,background:‘rgba(255,255,255,0.8)’,fontSize:‘12px’,color:’#44403c’,padding:‘5px 8px’,marginBottom:‘8px’,resize:‘vertical’}} />
+<input ref={ref} type=“text” value={title} onChange={function(e){setTitle(e.target.value);}} onKeyDown={function(e){if(e.key===‘Enter’)submit();if(e.key===‘Escape’)onClose();}} placeholder=“Task title…” style={{width:‘100%’,border:‘none’,borderBottom:‘1px solid ‘+list.color+‘60’,background:‘transparent’,fontSize:‘14px’,color:’#1c1917’,padding:‘3px 0’,marginBottom:‘8px’}} />
+<textarea value={notes} rows={2} onChange={function(e){setNotes(e.target.value);}} placeholder=“Notes (optional)…” style={{width:‘100%’,border:‘1px solid ‘+list.color+‘40’,borderRadius:‘6px’,background:‘rgba(255,255,255,0.8)’,fontSize:‘12px’,color:’#44403c’,padding:‘5px 8px’,marginBottom:‘8px’,resize:‘vertical’}} />
 <div style={{display:‘flex’,alignItems:‘center’,gap:‘8px’}}>
-<input type=“date” value={due} onChange={function(e){setDue(e.target.value);}}
-style={{border:‘1px solid #ede9e3’,borderRadius:‘5px’,padding:‘3px 7px’,fontSize:‘12px’,color:’#1c1917’,background:’#fff’}} />
+<input type=“date” value={due} onChange={function(e){setDue(e.target.value);}} style={{border:‘1px solid #ede9e3’,borderRadius:‘5px’,padding:‘3px 7px’,fontSize:‘12px’,color:’#1c1917’,background:’#fff’}} />
 <div style={{marginLeft:‘auto’,display:‘flex’,gap:‘7px’}}>
 <button onClick={onClose} style={{padding:‘4px 11px’,borderRadius:‘7px’,border:‘1px solid #ede9e3’,background:’#fff’,color:’#78716c’,fontSize:‘12px’,cursor:‘pointer’}}>Cancel</button>
 <button onClick={submit} style={{padding:‘4px 13px’,borderRadius:‘7px’,border:‘none’,background:list.color,color:’#fff’,fontSize:‘12px’,fontWeight:‘500’,cursor:‘pointer’}}>Add</button>
@@ -656,20 +421,15 @@ style={{border:‘1px solid #ede9e3’,borderRadius:‘5px’,padding:‘3px 7px
 }
 
 function TaskPane(props) {
-var listId   = props.listId;
-var tasks    = props.tasks;
-var dispatch = props.dispatch;
-var list = null;
-for (var i = 0; i < LISTS.length; i++) { if (LISTS[i].id === listId) { list = LISTS[i]; break; } }
-var hideDone = useState(false); var setHideDone = hideDone[1]; hideDone = hideDone[0];
-var adding   = useState(false); var setAdding   = adding[1];   adding   = adding[0];
-
-var all   = tasks.filter(function(t) { return t.list === listId; });
-var shown = hideDone ? all.filter(function(t) { return !t.done; }) : all;
-var done  = all.filter(function(t) { return t.done; }).length;
-var pend  = all.filter(function(t) { return !t.done; }).length;
-var pct   = all.length ? Math.round(done / all.length * 100) : 0;
-
+var listId=props.listId, tasks=props.tasks, dispatch=props.dispatch;
+var list=getList(listId);
+var s1=useState(false); var hideDone=s1[0]; var setHideDone=s1[1];
+var s2=useState(false); var adding=s2[0]; var setAdding=s2[1];
+var all=tasks.filter(function(t){return t.list===listId;});
+var shown=hideDone?all.filter(function(t){return !t.done;}):all;
+var done=all.filter(function(t){return t.done;}).length;
+var pend=all.filter(function(t){return !t.done;}).length;
+var pct=all.length?Math.round(done/all.length*100):0;
 return (
 <div className="fade">
 <div style={{display:‘flex’,alignItems:‘center’,justifyContent:‘space-between’,marginBottom:‘18px’}}>
@@ -677,83 +437,48 @@ return (
 <div style={{width:‘38px’,height:‘38px’,borderRadius:‘10px’,background:list.bg,display:‘flex’,alignItems:‘center’,justifyContent:‘center’,fontSize:‘20px’}}>{list.icon}</div>
 <div>
 <h2 style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘24px’,fontWeight:‘700’,color:’#1c1917’,lineHeight:‘1’}}>{list.label}</h2>
-<div style={{fontSize:‘12px’,color:’#78716c’,marginTop:‘2px’}}>{pend + ’ pending · ’ + done + ’ done’}</div>
+<div style={{fontSize:‘12px’,color:’#78716c’,marginTop:‘2px’}}>{pend+’ pending · ‘+done+’ done’}</div>
 </div>
 </div>
 <div style={{display:‘flex’,gap:‘7px’}}>
-{done > 0
-? <button onClick={function(){setHideDone(!hideDone);}}
-style={{padding:‘5px 13px’,borderRadius:‘18px’,fontSize:‘12px’,cursor:‘pointer’,border:‘1px solid #ede9e3’,background:hideDone?list.color:’#fff’,color:hideDone?’#fff’:’#78716c’}}>
-{hideDone ? ‘Show ’ + done + ’ done’ : ‘Hide ’ + done + ’ done’}
-</button>
-: null
+{done>0?<button onClick={function(){setHideDone(!hideDone);}} style={{padding:‘5px 13px’,borderRadius:‘18px’,fontSize:‘12px’,cursor:‘pointer’,border:‘1px solid #ede9e3’,background:hideDone?list.color:’#fff’,color:hideDone?’#fff’:’#78716c’}}>{hideDone?‘Show ‘+done+’ done’:‘Hide ‘+done+’ done’}</button>:null}
+<button onClick={function(){setAdding(!adding);}} style={{padding:‘5px 14px’,borderRadius:‘18px’,fontSize:‘12px’,fontWeight:‘500’,border:‘none’,background:list.color,color:’#fff’,cursor:‘pointer’}}>+ Add task</button>
+</div>
+</div>
+{adding?<AddForm listId={listId} list={list} dispatch={dispatch} onClose={function(){setAdding(false);}} />:null}
+{shown.length===0
+? <div style={{textAlign:‘center’,padding:‘44px 0’,color:’#a8a29e’,fontSize:‘13px’}}>{hideDone?‘All tasks hidden’:“No tasks yet — click ‘+ Add task’”}</div>
+: shown.map(function(t){return <TaskRow key={t.id} task={t} dispatch={dispatch} />;})
 }
-<button onClick={function(){setAdding(!adding);}}
-style={{padding:‘5px 14px’,borderRadius:‘18px’,fontSize:‘12px’,fontWeight:‘500’,border:‘none’,background:list.color,color:’#fff’,cursor:‘pointer’}}>
-+ Add task
-</button>
-</div>
-</div>
-{adding ? <AddForm listId={listId} list={list} dispatch={dispatch} onClose={function(){setAdding(false);}} /> : null}
-{shown.length === 0
-? <div style={{textAlign:‘center’,padding:‘44px 0’,color:’#a8a29e’,fontSize:‘13px’}}>{hideDone ? “All tasks hidden” : “No tasks yet — click ‘+ Add task’”}</div>
-: shown.map(function(t) { return <TaskRow key={t.id} task={t} dispatch={dispatch} />; })
-}
-{all.length > 0
-? <div style={{marginTop:‘18px’}}>
-<div style={{display:‘flex’,justifyContent:‘space-between’,fontSize:‘11px’,color:’#a8a29e’,marginBottom:‘4px’}}>
-<span>Progress</span><span>{done + ‘/’ + all.length}</span>
-</div>
-<div style={{height:‘4px’,background:’#ede9e3’,borderRadius:‘2px’}}>
-<div style={{height:‘100%’,borderRadius:‘2px’,background:list.color,width:pct+’%’,transition:‘width .4s ease’}}></div>
-</div>
-</div>
-: null
-}
+{all.length>0?<div style={{marginTop:‘18px’}}><div style={{display:‘flex’,justifyContent:‘space-between’,fontSize:‘11px’,color:’#a8a29e’,marginBottom:‘4px’}}><span>Progress</span><span>{done+’/’+all.length}</span></div><div style={{height:‘4px’,background:’#ede9e3’,borderRadius:‘2px’}}><div style={{height:‘100%’,borderRadius:‘2px’,background:list.color,width:pct+’%’,transition:‘width .4s ease’}}></div></div></div>:null}
 </div>
 );
 }
 
 function TaskSidebar(props) {
-var tasks      = props.tasks;
-var activeList = props.activeList;
-var setActive  = props.setActive;
-var pending = tasks.filter(function(t) { return !t.done; }).length;
-var overdue = tasks.filter(function(t) {
-if (t.done || !t.due) return false;
-return new Date(t.due + ‘T23:59:59’) < new Date();
-}).length;
-
+var tasks=props.tasks, activeList=props.activeList, setActive=props.setActive;
+var pending=tasks.filter(function(t){return !t.done;}).length;
+var overdue=tasks.filter(function(t){if(t.done||!t.due)return false;return new Date(t.due+‘T23:59:59’)<new Date();}).length;
 return (
 <div style={{display:‘flex’,flexDirection:‘column’,gap:‘13px’}}>
 <div style={{background:’#1c1917’,borderRadius:‘14px’,padding:‘18px’,color:’#fafaf7’}}>
 <div style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘19px’,fontWeight:‘700’,marginBottom:‘13px’}}>My Tasks</div>
 <div style={{display:‘grid’,gridTemplateColumns:‘1fr 1fr’,gap:‘7px’}}>
-{[[‘Pending’,pending,overdue>0&&false],[‘Overdue’,overdue,overdue>0],[‘Lists’,LISTS.length,false],[‘Done’,tasks.filter(function(t){return t.done;}).length,false]].map(function(row) {
-return (
-<div key={row[0]} style={{background:‘rgba(255,255,255,.07)’,borderRadius:‘8px’,padding:‘8px 10px’}}>
-<div style={{fontSize:‘18px’,fontWeight:‘600’,color:row[2]?’#fca5a5’:’#fafaf7’}}>{row[1]}</div>
-<div style={{fontSize:‘10px’,color:’#a8a29e’,textTransform:‘uppercase’,letterSpacing:’.5px’}}>{row[0]}</div>
-</div>
-);
+{[[‘Pending’,pending,false],[‘Overdue’,overdue,overdue>0],[‘Lists’,LISTS.length,false],[‘Done’,tasks.filter(function(t){return t.done;}).length,false]].map(function(r){
+return <div key={r[0]} style={{background:‘rgba(255,255,255,.07)’,borderRadius:‘8px’,padding:‘8px 10px’}}><div style={{fontSize:‘18px’,fontWeight:‘600’,color:r[2]?’#fca5a5’:’#fafaf7’}}>{r[1]}</div><div style={{fontSize:‘10px’,color:’#a8a29e’,textTransform:‘uppercase’,letterSpacing:’.5px’}}>{r[0]}</div></div>;
 })}
 </div>
 </div>
 <div style={{background:’#fff’,borderRadius:‘12px’,border:‘1px solid #ede9e3’,padding:‘12px 14px’}}>
 <div style={{fontSize:‘11px’,fontWeight:‘600’,color:’#78716c’,textTransform:‘uppercase’,letterSpacing:’.8px’,marginBottom:‘9px’}}>Task Lists</div>
-{LISTS.map(function(list) {
-var cnt    = tasks.filter(function(t) { return t.list === list.id && !t.done; }).length;
-var active = activeList === list.id;
-var btnBg  = active ? list.bg : ‘transparent’;
-var btnBorder = active ? ’1px solid ’ + list.color + ‘40’ : ‘1px solid transparent’;
-var iconBg = active ? list.color : list.bg;
-var txtColor = active ? list.dark : ‘#44403c’;
+{LISTS.map(function(list){
+var cnt=tasks.filter(function(t){return t.list===list.id&&!t.done;}).length;
+var active=activeList===list.id;
 return (
-<button key={list.id} onClick={function(){setActive(list.id);}}
-style={{display:‘flex’,alignItems:‘center’,gap:‘9px’,padding:‘7px 10px’,borderRadius:‘9px’,textAlign:‘left’,cursor:‘pointer’,background:btnBg,border:btnBorder,width:‘100%’,marginBottom:‘3px’}}>
-<div style={{width:‘26px’,height:‘26px’,borderRadius:‘7px’,fontSize:‘13px’,flexShrink:‘0’,background:iconBg,display:‘flex’,alignItems:‘center’,justifyContent:‘center’}}>{list.icon}</div>
-<span style={{flex:‘1’,fontSize:‘13px’,fontWeight:‘500’,color:txtColor}}>{list.label}</span>
-{cnt > 0 ? <span style={{fontSize:‘11px’,fontWeight:‘600’,color:list.color,background:list.bg,borderRadius:‘9px’,padding:‘1px 6px’}}>{cnt}</span> : null}
+<button key={list.id} onClick={function(){setActive(list.id);}} style={{display:‘flex’,alignItems:‘center’,gap:‘9px’,padding:‘7px 10px’,borderRadius:‘9px’,textAlign:‘left’,cursor:‘pointer’,background:active?list.bg:‘transparent’,border:active?‘1px solid ‘+list.color+‘40’:‘1px solid transparent’,width:‘100%’,marginBottom:‘3px’}}>
+<div style={{width:‘26px’,height:‘26px’,borderRadius:‘7px’,fontSize:‘13px’,flexShrink:‘0’,background:active?list.color:list.bg,display:‘flex’,alignItems:‘center’,justifyContent:‘center’}}>{list.icon}</div>
+<span style={{flex:‘1’,fontSize:‘13px’,fontWeight:‘500’,color:active?list.dark:’#44403c’}}>{list.label}</span>
+{cnt>0?<span style={{fontSize:‘11px’,fontWeight:‘600’,color:list.color,background:list.bg,borderRadius:‘9px’,padding:‘1px 6px’}}>{cnt}</span>:null}
 </button>
 );
 })}
@@ -766,19 +491,11 @@ style={{display:‘flex’,alignItems:‘center’,gap:‘9px’,padding:‘7px 
 // EXPORT OVERLAY
 // ─────────────────────────────────────────────────────────────────────────────
 function ExportOverlay(props) {
-var events  = props.events;
-var tasks   = props.tasks;
-var onClose = props.onClose;
-
-var grouped = {};
-events.forEach(function(ev) {
-var k = dkey(ev.start);
-if (!grouped[k]) grouped[k] = [];
-grouped[k].push(ev);
-});
-var sortedDates = Object.keys(grouped).sort();
-var dateStr = new Date().toLocaleDateString(‘en-AU’, {weekday:‘long’,day:‘numeric’,month:‘long’,year:‘numeric’});
-
+var events=props.events, tasks=props.tasks, onClose=props.onClose;
+var grouped={};
+events.forEach(function(ev){var k=dkey(ev.start);if(!grouped[k])grouped[k]=[];grouped[k].push(ev);});
+var sortedDates=Object.keys(grouped).sort();
+var dateStr=new Date().toLocaleDateString(‘en-AU’,{weekday:‘long’,day:‘numeric’,month:‘long’,year:‘numeric’});
 return (
 <div style={{position:‘fixed’,top:‘0’,left:‘0’,right:‘0’,bottom:‘0’,background:‘rgba(0,0,0,.55)’,zIndex:‘200’,overflowY:‘auto’}}>
 <div onClick={function(e){e.stopPropagation();}} style={{background:’#fff’,maxWidth:‘700px’,width:‘100%’,margin:‘0 auto’,minHeight:‘100vh’,padding:‘22px 20px 48px’}}>
@@ -787,95 +504,43 @@ return (
 <div style={{fontSize:‘11px’,color:’#78716c’}}>{dateStr}</div>
 </div>
 <div className=“noprint” style={{display:‘flex’,gap:‘8px’,marginBottom:‘20px’}}>
-<button onClick={function(){window.print();}} style={{padding:‘8px 16px’,borderRadius:‘8px’,border:‘none’,background:’#1c1917’,color:’#fff’,fontSize:‘13px’,fontWeight:‘500’,cursor:‘pointer’}}>
-Print / Save as PDF
-</button>
-<button onClick={onClose} style={{padding:‘8px 13px’,borderRadius:‘8px’,border:‘1px solid #ede9e3’,background:’#f5f3ee’,color:’#78716c’,fontSize:‘13px’,cursor:‘pointer’}}>
-Close
-</button>
+<button onClick={function(){window.print();}} style={{padding:‘8px 16px’,borderRadius:‘8px’,border:‘none’,background:’#1c1917’,color:’#fff’,fontSize:‘13px’,fontWeight:‘500’,cursor:‘pointer’}}>Print / Save as PDF</button>
+<button onClick={onClose} style={{padding:‘8px 13px’,borderRadius:‘8px’,border:‘1px solid #ede9e3’,background:’#f5f3ee’,color:’#78716c’,fontSize:‘13px’,cursor:‘pointer’}}>Close</button>
 </div>
-
-```
-    <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'18px',fontWeight:'700',marginBottom:'12px',paddingBottom:'5px',borderBottom:'1px solid #ede9e3'}}>
-      Calendar Events
-    </div>
-    {sortedDates.length === 0
-      ? <p style={{color:'#999',fontStyle:'italic',fontSize:'13px',marginBottom:'20px'}}>No upcoming events.</p>
-      : sortedDates.map(function(d) {
-          var evs = grouped[d];
-          return (
-            <div key={d} style={{marginBottom:'14px'}}>
-              <div style={{fontSize:'11px',fontWeight:'600',textTransform:'uppercase',letterSpacing:'1px',color:'#78716c',marginBottom:'5px'}}>{fdayfull(d)}</div>
-              {evs.map(function(ev) {
-                var c    = CAT[ev.cat] || CAT.personal;
-                var t1   = ftime(ev.start);
-                var t2   = ftime(ev.end);
-                var tstr = ev.allDay ? 'All day' : (t1 + (t2 ? ' to ' + t2 : ''));
-                return (
-                  <div key={ev.id} style={{display:'flex',alignItems:'center',gap:'8px',padding:'7px 10px',border:'1px solid #ede9e3',borderRadius:'7px',marginBottom:'4px',background:'#fafaf7'}}>
-                    <div style={{width:'4px',minWidth:'4px',height:'26px',borderRadius:'2px',background:c.color}}></div>
-                    <div style={{flex:'1'}}>
-                      <div style={{fontSize:'13px',fontWeight:'500',color:'#1c1917'}}>{ev.title}</div>
-                      {ev.location ? <div style={{fontSize:'11px',color:'#78716c',marginTop:'1px'}}>{ev.location}</div> : null}
-                    </div>
-                    <div style={{fontSize:'11px',color:'#78716c',textAlign:'right',flexShrink:'0'}}>{tstr}</div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })
-    }
-
-    <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'18px',fontWeight:'700',marginBottom:'12px',paddingBottom:'5px',borderBottom:'1px solid #ede9e3',marginTop:'10px'}}>
-      Tasks
-    </div>
-    {LISTS.map(function(list) {
-      var pend = tasks.filter(function(t) { return t.list === list.id && !t.done; });
-      var comp = tasks.filter(function(t) { return t.list === list.id && t.done; });
-      if (!pend.length && !comp.length) return null;
-      return (
-        <div key={list.id} style={{marginBottom:'16px'}}>
-          <div style={{fontSize:'14px',fontWeight:'600',padding:'5px 10px',background:'#f5f3ee',borderLeft:'4px solid '+list.color,borderRadius:'0 7px 7px 0',marginBottom:'6px',display:'flex',justifyContent:'space-between'}}>
-            <span>{list.icon + ' ' + list.label}</span>
-            <span style={{fontSize:'11px',fontWeight:'400',color:'#78716c'}}>{pend.length + ' pending'}</span>
-          </div>
-          {pend.map(function(t) {
-            var due = fdue(t.due);
-            return (
-              <div key={t.id} style={{display:'flex',alignItems:'flex-start',gap:'8px',padding:'6px 10px',borderBottom:'1px solid #f5f3ee'}}>
-                <span style={{color:'#a8a29e',flexShrink:'0'}}>○</span>
-                <div>
-                  <div style={{fontSize:'13px',color:'#1c1917'}}>{t.title}</div>
-                  {t.notes ? <div style={{fontSize:'11px',color:'#78716c',marginTop:'1px'}}>{t.notes}</div> : null}
-                  {due ? <div style={{fontSize:'11px',color:due.color,marginTop:'1px'}}>{due.label}</div> : null}
-                </div>
-              </div>
-            );
-          })}
-          {comp.length > 0
-            ? <div>
-                <div style={{fontSize:'10px',color:'#a8a29e',textTransform:'uppercase',margin:'7px 0 4px',paddingLeft:'10px'}}>{'Completed (' + comp.length + ')'}</div>
-                {comp.map(function(t) {
-                  return (
-                    <div key={t.id} style={{display:'flex',gap:'8px',padding:'5px 10px',borderBottom:'1px solid #f5f3ee',opacity:'.5'}}>
-                      <span style={{color:'#a8a29e'}}>✓</span>
-                      <div style={{fontSize:'13px',textDecoration:'line-through',color:'#1c1917'}}>{t.title}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            : null
-          }
-        </div>
-      );
-    })}
-
-    <div style={{marginTop:'24px',paddingTop:'10px',borderTop:'1px solid #ede9e3',fontSize:'11px',color:'#a8a29e',textAlign:'center'}}>Generated by Momentum</div>
-  </div>
+<div style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘18px’,fontWeight:‘700’,marginBottom:‘12px’,paddingBottom:‘5px’,borderBottom:‘1px solid #ede9e3’}}>Calendar Events</div>
+{sortedDates.length===0?<p style={{color:’#999’,fontStyle:‘italic’,fontSize:‘13px’,marginBottom:‘20px’}}>No upcoming events.</p>:
+sortedDates.map(function(d){
+var evs=grouped[d];
+return <div key={d} style={{marginBottom:‘14px’}}>
+<div style={{fontSize:‘11px’,fontWeight:‘600’,textTransform:‘uppercase’,letterSpacing:‘1px’,color:’#78716c’,marginBottom:‘5px’}}>{fdayfull(d)}</div>
+{evs.map(function(ev){
+var c=CAT[ev.cat]||CAT.personal, t1=ftime(ev.start), t2=ftime(ev.end);
+var tstr=ev.allDay?‘All day’:(t1+(t2?’ to ‘+t2:’’));
+return <div key={ev.id} style={{display:‘flex’,alignItems:‘center’,gap:‘8px’,padding:‘7px 10px’,border:‘1px solid #ede9e3’,borderRadius:‘7px’,marginBottom:‘4px’,background:’#fafaf7’}}>
+<div style={{width:‘4px’,minWidth:‘4px’,height:‘26px’,borderRadius:‘2px’,background:c.color}}></div>
+<div style={{flex:‘1’}}><div style={{fontSize:‘13px’,fontWeight:‘500’,color:’#1c1917’}}>{ev.title}</div>{ev.location?<div style={{fontSize:‘11px’,color:’#78716c’,marginTop:‘1px’}}>{ev.location}</div>:null}</div>
+<div style={{fontSize:‘11px’,color:’#78716c’,textAlign:‘right’,flexShrink:‘0’}}>{tstr}</div>
+</div>;
+})}
+</div>;
+})
+}
+<div style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘18px’,fontWeight:‘700’,marginBottom:‘12px’,paddingBottom:‘5px’,borderBottom:‘1px solid #ede9e3’,marginTop:‘10px’}}>Tasks</div>
+{LISTS.map(function(list){
+var pend=tasks.filter(function(t){return t.list===list.id&&!t.done;});
+var comp=tasks.filter(function(t){return t.list===list.id&&t.done;});
+if(!pend.length&&!comp.length) return null;
+return <div key={list.id} style={{marginBottom:‘16px’}}>
+<div style={{fontSize:‘14px’,fontWeight:‘600’,padding:‘5px 10px’,background:’#f5f3ee’,borderLeft:‘4px solid ‘+list.color,borderRadius:‘0 7px 7px 0’,marginBottom:‘6px’,display:‘flex’,justifyContent:‘space-between’}}>
+<span>{list.icon+’ ‘+list.label}</span><span style={{fontSize:‘11px’,fontWeight:‘400’,color:’#78716c’}}>{pend.length+’ pending’}</span>
 </div>
-```
-
+{pend.map(function(t){var due=fdue(t.due);return <div key={t.id} style={{display:‘flex’,alignItems:‘flex-start’,gap:‘8px’,padding:‘6px 10px’,borderBottom:‘1px solid #f5f3ee’}}><span style={{color:’#a8a29e’,flexShrink:‘0’}}>○</span><div><div style={{fontSize:‘13px’,color:’#1c1917’}}>{t.title}</div>{t.notes?<div style={{fontSize:‘11px’,color:’#78716c’,marginTop:‘1px’}}>{t.notes}</div>:null}{due?<div style={{fontSize:‘11px’,color:due.color,marginTop:‘1px’}}>{due.label}</div>:null}</div></div>;})}
+{comp.length>0?<div><div style={{fontSize:‘10px’,color:’#a8a29e’,textTransform:‘uppercase’,margin:‘7px 0 4px’,paddingLeft:‘10px’}}>{‘Completed (’+comp.length+’)’}</div>{comp.map(function(t){return <div key={t.id} style={{display:‘flex’,gap:‘8px’,padding:‘5px 10px’,borderBottom:‘1px solid #f5f3ee’,opacity:’.5’}}><span style={{color:’#a8a29e’}}>✓</span><div style={{fontSize:‘13px’,textDecoration:‘line-through’,color:’#1c1917’}}>{t.title}</div></div>;})}</div>:null}
+</div>;
+})}
+<div style={{marginTop:‘24px’,paddingTop:‘10px’,borderTop:‘1px solid #ede9e3’,fontSize:‘11px’,color:’#a8a29e’,textAlign:‘center’}}>Generated by Momentum</div>
+</div>
+</div>
 );
 }
 
@@ -883,113 +548,68 @@ Close
 // ROOT APP
 // ─────────────────────────────────────────────────────────────────────────────
 function App() {
-var screen_    = useState(loadId() ? ‘auth’ : ‘setup’); var setScreen    = screen_[1];    var screen    = screen_[0];
-var clientId_  = useState(loadId);                       var setClientId  = clientId_[1];  var clientId  = clientId_[0];
-var events_    = useState([]);                            var setEvents    = events_[1];    var events    = events_[0];
-var loading_   = useState(false);                         var setLoading   = loading_[1];   var loading   = loading_[0];
-var refreshing_= useState(false);                         var setRefreshing= refreshing_[1];var refreshing= refreshing_[0];
-var error_     = useState(’’);                            var setError     = error_[1];     var error     = error_[0];
-var tab_       = useState(‘calendar’);                    var setTab       = tab_[1];       var tab       = tab_[0];
-var activeList_= useState(‘personal’);                    var setActiveList= activeList_[1];var activeList= activeList_[0];
-var showExport_= useState(false);                         var setShowExport= showExport_[1];var showExport= showExport_[0];
-var tasks      = useReducer(taskReducer, null, loadTasks);var dispatch = tasks[1]; tasks = tasks[0];
-var tcRef      = useRef(null);
+var s1=useState(loadId()?‘auth’:‘setup’); var screen=s1[0]; var setScreen=s1[1];
+var s2=useState(loadId);                  var clientId=s2[0]; var setClientId=s2[1];
+var s3=useState([]);                      var events=s3[0]; var setEvents=s3[1];
+var s4=useState(false);                   var loading=s4[0]; var setLoading=s4[1];
+var s5=useState(false);                   var refreshing=s5[0]; var setRefreshing=s5[1];
+var s6=useState(’’);                      var error=s6[0]; var setError=s6[1];
+var s7=useState(‘calendar’);              var tab=s7[0]; var setTab=s7[1];
+var s8=useState(‘personal’);              var activeList=s8[0]; var setActiveList=s8[1];
+var s9=useState(false);                   var showExport=s9[0]; var setShowExport=s9[1];
+var tr=useReducer(taskReducer,null,loadTasks); var tasks=tr[0]; var dispatch=tr[1];
+var tcRef=useRef(null);
 
 useEffect(function() {
-if (screen !== ‘auth’ && screen !== ‘app’) return;
+if (screen!==‘auth’&&screen!==‘app’) return;
 function tryInit() {
-if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) return false;
-tcRef.current = window.google.accounts.oauth2.initTokenClient({
-client_id: clientId,
-scope: SCOPE,
-callback: handleToken,
-});
-if (screen === ‘auth’) {
-setLoading(true);
-tcRef.current.requestAccessToken({prompt: ‘’});
-}
+if (!window.google||!window.google.accounts||!window.google.accounts.oauth2) return false;
+tcRef.current=window.google.accounts.oauth2.initTokenClient({client_id:clientId,scope:SCOPE,callback:handleToken});
+if (screen===‘auth’){setLoading(true);tcRef.current.requestAccessToken({prompt:’’});}
 return true;
 }
-if (!tryInit()) {
-var iv = setInterval(function() { if (tryInit()) clearInterval(iv); }, 300);
-return function() { clearInterval(iv); };
-}
-}, [screen, clientId]);
+if (!tryInit()){var iv=setInterval(function(){if(tryInit())clearInterval(iv);},300);return function(){clearInterval(iv);};}
+},[screen,clientId]);
 
 async function handleToken(resp) {
-if (resp.error) {
-setError(‘Sign-in error: ’ + resp.error);
-setLoading(false);
-setRefreshing(false);
-return;
-}
-try {
-var evs = await fetchCal(resp.access_token);
-setEvents(evs);
-setScreen(‘app’);
-setError(’’);
-} catch(e) {
-setError(e.message === ‘TOKEN_EXPIRED’ ? ‘Session expired. Reload page.’ : e.message);
-}
-setLoading(false);
-setRefreshing(false);
+if (resp.error){setError(‘Sign-in error: ‘+resp.error);setLoading(false);setRefreshing(false);return;}
+try {var evs=await fetchCal(resp.access_token);setEvents(evs);setScreen(‘app’);setError(’’);}
+catch(e){setError(e.message===‘TOKEN_EXPIRED’?‘Session expired. Reload page.’:e.message);}
+setLoading(false);setRefreshing(false);
 }
 
-function refresh() {
-setRefreshing(true);
-setError(’’);
-if (tcRef.current) {
-tcRef.current.requestAccessToken({prompt: ‘’});
-} else {
-setError(‘Auth not ready. Please reload.’);
-setRefreshing(false);
-}
-}
+function refresh(){setRefreshing(true);setError(’’);if(tcRef.current)tcRef.current.requestAccessToken({prompt:’’});else{setError(‘Auth not ready. Reload page.’);setRefreshing(false);}}
+function doSave(id){saveId(id);setClientId(id);setScreen(‘auth’);}
+function doReset(){clearId();setClientId(’’);setScreen(‘setup’);}
 
-function doSaveClientId(id) { saveId(id); setClientId(id); setScreen(‘auth’); }
-function doReset()          { clearId(); setClientId(’’); setScreen(‘setup’); }
-
-if (screen === ‘setup’) return <SetupScreen onSave={doSaveClientId} />;
-if (screen === ‘auth’)  return <AuthScreen  onReset={doReset} err={error} />;
+if (screen===‘setup’) return <SetupScreen onSave={doSave} />;
+if (screen===‘auth’)  return <AuthScreen onReset={doReset} err={error} />;
 
 return (
 <div style={{minHeight:‘100vh’,background:’#f5f3ee’}}>
-{showExport ? <ExportOverlay events={events} tasks={tasks} onClose={function(){setShowExport(false);}} /> : null}
+{showExport?<ExportOverlay events={events} tasks={tasks} onClose={function(){setShowExport(false);}} />:null}
 <div style={{background:’#fff’,borderBottom:‘1px solid #ede9e3’,padding:‘0 24px’,height:‘54px’,display:‘flex’,alignItems:‘center’,justifyContent:‘space-between’,position:‘sticky’,top:‘0’,zIndex:‘10’}}>
 <div style={{display:‘flex’,alignItems:‘center’,gap:‘11px’}}>
 <div style={{width:‘29px’,height:‘29px’,borderRadius:‘8px’,background:‘linear-gradient(135deg,#1c1917,#44403c)’,display:‘flex’,alignItems:‘center’,justifyContent:‘center’,fontSize:‘14px’,color:’#fafaf7’}}>◈</div>
 <span style={{fontFamily:”‘Cormorant Garamond’,serif”,fontSize:‘18px’,fontWeight:‘700’,color:’#1c1917’}}>Momentum</span>
 <div style={{display:‘flex’,gap:‘2px’,marginLeft:‘10px’,background:’#f5f3ee’,borderRadius:‘8px’,padding:‘3px’}}>
-{[[‘calendar’,‘📅 Calendar’],[‘tasks’,‘✓ Tasks’]].map(function(pair) {
-var active = tab === pair[0];
-return (
-<button key={pair[0]} onClick={function(){setTab(pair[0]);}}
-style={{padding:‘4px 12px’,borderRadius:‘6px’,fontSize:‘12px’,fontWeight:‘500’,border:‘none’,cursor:‘pointer’,background:active?’#fff’:‘transparent’,color:active?’#1c1917’:’#78716c’,boxShadow:active?‘0 1px 4px rgba(0,0,0,.07)’:‘none’}}>
-{pair[1]}
-</button>
-);
+{[[‘calendar’,‘📅 Calendar’],[‘tasks’,‘✓ Tasks’]].map(function(p){
+var active=tab===p[0];
+return <button key={p[0]} onClick={function(){setTab(p[0]);}} style={{padding:‘4px 12px’,borderRadius:‘6px’,fontSize:‘12px’,fontWeight:‘500’,border:‘none’,cursor:‘pointer’,background:active?’#fff’:‘transparent’,color:active?’#1c1917’:’#78716c’,boxShadow:active?‘0 1px 4px rgba(0,0,0,.07)’:‘none’}}>{p[1]}</button>;
 })}
 </div>
 </div>
 <div style={{display:‘flex’,alignItems:‘center’,gap:‘9px’}}>
-<button onClick={function(){setShowExport(true);}}
-style={{padding:‘4px 12px’,borderRadius:‘16px’,border:‘1px solid #ede9e3’,background:’#fff’,color:’#78716c’,fontSize:‘12px’,cursor:‘pointer’}}>
-Export
-</button>
-<button onClick={doReset}
-style={{fontSize:‘11px’,color:’#a8a29e’,background:‘none’,border:‘none’,cursor:‘pointer’,textDecoration:‘underline’}}>
-Sign out
-</button>
+<button onClick={function(){setShowExport(true);}} style={{padding:‘4px 12px’,borderRadius:‘16px’,border:‘1px solid #ede9e3’,background:’#fff’,color:’#78716c’,fontSize:‘12px’,cursor:‘pointer’}}>Export</button>
+<button onClick={doReset} style={{fontSize:‘11px’,color:’#a8a29e’,background:‘none’,border:‘none’,cursor:‘pointer’,textDecoration:‘underline’}}>Sign out</button>
 </div>
 </div>
 <div style={{maxWidth:‘1100px’,margin:‘0 auto’,padding:‘24px’}}>
-{tab === ‘calendar’
+{tab===‘calendar’
 ? <CalendarView events={events} tasks={tasks} onRefresh={refresh} refreshing={refreshing} />
 : <div style={{display:‘grid’,gridTemplateColumns:‘1fr 260px’,gap:‘22px’,alignItems:‘start’}}>
 <TaskPane listId={activeList} tasks={tasks} dispatch={dispatch} />
-<div style={{position:‘sticky’,top:‘70px’}}>
-<TaskSidebar tasks={tasks} activeList={activeList} setActive={setActiveList} />
-</div>
+<div style={{position:‘sticky’,top:‘70px’}}><TaskSidebar tasks={tasks} activeList={activeList} setActive={setActiveList} /></div>
 </div>
 }
 </div>
@@ -997,7 +617,7 @@ Sign out
 );
 }
 
-ReactDOM.createRoot(document.getElementById(‘root’)).render(React.createElement(App, null));
+ReactDOM.createRoot(document.getElementById(‘root’)).render(React.createElement(App,null));
 </script>
 
 </body>
