@@ -1,82 +1,3 @@
-<script>
-function generatePrint(events, tasks) {
-  var now = new Date();
-  var dateStr = now.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  var CAT_COLORS = {travel:'#0ea5e9',work:'#8b5cf6',health:'#10b981',social:'#f59e0b',personal:'#ec4899'};
-  var LIST_META = {
-    personal:  {label:'Personal',         icon:'👤', color:'#f59e0b'},
-    kids:      {label:'Kids',             icon:'🧒', color:'#10b981'},
-    christmas: {label:'Christmas Wonder', icon:'🎄', color:'#ef4444'},
-    property:  {label:'Property',         icon:'🏡', color:'#0ea5e9'},
-    investment:{label:'Investment',       icon:'📈', color:'#8b5cf6'},
-    work:      {label:'Work',             icon:'💼', color:'#64748b'},
-  };
-  function fmtT(iso) {
-    if (!iso || iso.length===10) return '';
-    try { return new Date(iso).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit',hour12:true}); } catch(e){ return ''; }
-  }
-  function fmtD(iso) {
-    try { return new Date(iso+'T12:00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}); } catch(e){ return iso; }
-  }
-  function dKey(iso) { return (iso||'').length===10 ? iso : (iso||'').slice(0,10); }
-
-  // Events HTML
-  var grouped = {};
-  (events||[]).forEach(function(ev){ var k=dKey(ev.start); if(!grouped[k])grouped[k]=[]; grouped[k].push(ev); });
-  var sortedDates = Object.keys(grouped).sort();
-  var evHTML = '';
-  if (!sortedDates.length) {
-    evHTML = '<p style="color:#999;font-style:italic;padding:8px 0">No upcoming events.</p>';
-  } else {
-    sortedDates.forEach(function(d){
-      evHTML += '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#78716c;margin-bottom:6px">'+fmtD(d)+'</div>';
-      grouped[d].forEach(function(ev){
-        var col  = CAT_COLORS[ev.cat]||'#78716c';
-        var time = ev.allDay ? 'All day' : (fmtT(ev.start)+(fmtT(ev.end)?' to '+fmtT(ev.end):''));
-        evHTML += '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #ede9e3;border-radius:7px;margin-bottom:5px;background:#fafaf7">';
-        evHTML += '<div style="width:4px;min-width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
-        evHTML += '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+ev.title+'</div>';
-        if (ev.location) evHTML += '<div style="font-size:11px;color:#78716c;margin-top:1px">'+ev.location+'</div>';
-        evHTML += '</div><div style="font-size:11px;color:#78716c;text-align:right">'+time+'</div></div>';
-      });
-      evHTML += '</div>';
-    });
-  }
-
-  // Tasks HTML
-  var taskHTML = '';
-  ['personal','kids','christmas','property','investment','work'].forEach(function(lid){
-    var m    = LIST_META[lid];
-    var pend = (tasks||[]).filter(function(t){return t.list===lid&&!t.done;});
-    var comp = (tasks||[]).filter(function(t){return t.list===lid&&t.done;});
-    if (!pend.length && !comp.length) return;
-    taskHTML += '<div style="margin-bottom:16px">';
-    taskHTML += '<div style="font-size:14px;font-weight:600;padding:5px 10px;background:#f5f3ee;border-left:4px solid '+m.color+';border-radius:0 7px 7px 0;margin-bottom:6px;display:flex;justify-content:space-between">';
-    taskHTML += '<span>'+m.icon+' '+m.label+'</span><span style="font-size:11px;font-weight:400;color:#78716c">'+pend.length+' pending</span></div>';
-    pend.forEach(function(t){
-      taskHTML += '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-bottom:1px solid #f5f3ee">';
-      taskHTML += '<span style="color:#a8a29e;flex-shrink:0">○</span><div>';
-      taskHTML += '<div style="font-size:13px">'+t.title+'</div>';
-      if (t.notes) taskHTML += '<div style="font-size:11px;color:#78716c;margin-top:1px">'+t.notes+'</div>';
-      if (t.due)   taskHTML += '<div style="font-size:11px;color:#f59e0b;margin-top:1px">Due '+new Date(t.due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+'</div>';
-      taskHTML += '</div></div>';
-    });
-    if (comp.length) {
-      taskHTML += '<div style="font-size:10px;color:#a8a29e;text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px;padding-left:10px">Completed ('+comp.length+')</div>';
-      comp.forEach(function(t){
-        taskHTML += '<div style="display:flex;gap:8px;padding:5px 10px;border-bottom:1px solid #f5f3ee;opacity:.5">';
-        taskHTML += '<span style="color:#a8a29e">✓</span><div style="font-size:13px;text-decoration:line-through">'+t.title+'</div></div>';
-      });
-    }
-    taskHTML += '</div>';
-  });
-  if (!taskHTML) taskHTML = '<p style="color:#999;font-style:italic;padding:8px 0">No tasks yet.</p>';
-
-  // Fire custom event — React app shows an in-app overlay (no popup blocker issues)
-  window.dispatchEvent(new CustomEvent('momentum-export', {detail:{dateStr:dateStr, evHTML:evHTML, taskHTML:taskHTML}}));
-}
-</script>
-
 <script type="text/babel">
 const { useState, useReducer, useRef, useEffect } = React;
 
@@ -645,44 +566,116 @@ function TaskSidebar({tasks,activeList,setActiveList}) {
 }
 
 // ── Export Overlay ─────────────────────────────────────────────────────────────
-function ExportOverlay({data, onClose}) {
+function ExportOverlay({events, tasks, onClose}) {
+  const dateStr = new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // Group events by date
+  const grouped = {};
+  events.forEach(ev=>{ const k=dateKey(ev.start); if(!grouped[k])grouped[k]=[]; grouped[k].push(ev); });
+  const sortedDates = Object.keys(grouped).sort();
+
+  // Group tasks by list
+  const listIds = ['personal','kids','christmas','property','investment','work'];
+
   useEffect(()=>{
     document.body.style.overflow='hidden';
     return ()=>{ document.body.style.overflow=''; };
   },[]);
+
   return (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',zIndex:200,display:'flex',flexDirection:'column'}}
-      onClick={onClose}>
-      <div style={{background:'#fff',margin:'0',flex:1,overflowY:'auto',maxWidth:760,width:'100%',alignSelf:'center',padding:'24px 24px 40px'}}
-        onClick={e=>e.stopPropagation()}>
+    <div onClick={onClose} style={{position:'fixed',inset:'0',background:'rgba(0,0,0,.55)',zIndex:200,display:'flex',flexDirection:'column',overflowY:'auto'}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:'#fff',maxWidth:740,width:'100%',alignSelf:'center',margin:'0 auto',minHeight:'100vh',padding:'24px 22px 48px'}}>
+
         {/* Header */}
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottom:'2px solid #1c1917',marginBottom:22}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottom:'2px solid #1c1917',marginBottom:20}}>
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700}}>Momentum</div>
-          <div style={{fontSize:11,color:'#78716c'}}>{data.dateStr}</div>
+          <div style={{fontSize:11,color:'#78716c'}}>{dateStr}</div>
         </div>
-        {/* Print / Close buttons */}
-        <div style={{display:'flex',gap:9,marginBottom:20}}>
-          <button onClick={()=>window.print()} style={{padding:'8px 18px',borderRadius:8,border:'none',background:'#1c1917',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
+
+        {/* Buttons */}
+        <div style={{display:'flex',gap:8,marginBottom:22}}>
+          <button onClick={()=>window.print()} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#1c1917',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
             Print / Save as PDF
           </button>
-          <button onClick={onClose} style={{padding:'8px 14px',borderRadius:8,border:'1px solid #ede9e3',background:'#f5f3ee',color:'#78716c',fontSize:13,cursor:'pointer'}}>
+          <button onClick={onClose} style={{padding:'8px 13px',borderRadius:8,border:'1px solid #ede9e3',background:'#f5f3ee',color:'#78716c',fontSize:13,cursor:'pointer'}}>
             Close
           </button>
         </div>
-        {/* Events */}
-        <div style={{marginBottom:26}}>
+
+        {/* Calendar Events */}
+        <div style={{marginBottom:28}}>
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:700,marginBottom:10,paddingBottom:5,borderBottom:'1px solid #ede9e3'}}>
             Calendar Events
           </div>
-          <div dangerouslySetInnerHTML={{__html:data.evHTML}}/>
+          {sortedDates.length===0
+            ? <p style={{color:'#999',fontStyle:'italic',fontSize:13}}>No upcoming events.</p>
+            : sortedDates.map(d=>(
+                <div key={d} style={{marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'1px',color:'#78716c',marginBottom:6}}>
+                    {fmtDayFull(d)}
+                  </div>
+                  {grouped[d].map(ev=>{
+                    const c=CAT[ev.cat]||CAT.personal;
+                    const time=ev.allDay?'All day':(fmtTime(ev.start)+(fmtTime(ev.end)?' to '+fmtTime(ev.end):''));
+                    return (
+                      <div key={ev.id} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',border:'1px solid #ede9e3',borderRadius:7,marginBottom:5,background:'#fafaf7'}}>
+                        <div style={{width:4,minWidth:4,height:28,borderRadius:2,background:c.color}}/>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:13,fontWeight:500,color:'#1c1917'}}>{ev.title}</div>
+                          {ev.location&&<div style={{fontSize:11,color:'#78716c',marginTop:1}}>{ev.location}</div>}
+                        </div>
+                        <div style={{fontSize:11,color:'#78716c',textAlign:'right',flexShrink:0}}>{time}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
+          }
         </div>
+
         {/* Tasks */}
         <div>
           <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:700,marginBottom:10,paddingBottom:5,borderBottom:'1px solid #ede9e3'}}>
             Tasks
           </div>
-          <div dangerouslySetInnerHTML={{__html:data.taskHTML}}/>
+          {listIds.map(lid=>{
+            const list=LISTS.find(l=>l.id===lid);
+            if(!list) return null;
+            const pend=tasks.filter(t=>t.list===lid&&!t.done);
+            const comp=tasks.filter(t=>t.list===lid&&t.done);
+            if(!pend.length&&!comp.length) return null;
+            return (
+              <div key={lid} style={{marginBottom:16}}>
+                <div style={{fontSize:14,fontWeight:600,padding:'5px 10px',background:'#f5f3ee',borderLeft:'4px solid '+list.color,borderRadius:'0 7px 7px 0',marginBottom:6,display:'flex',justifyContent:'space-between'}}>
+                  <span>{list.icon+' '+list.label}</span>
+                  <span style={{fontSize:11,fontWeight:400,color:'#78716c'}}>{pend.length+' pending'}</span>
+                </div>
+                {pend.map(t=>(
+                  <div key={t.id} style={{display:'flex',alignItems:'flex-start',gap:8,padding:'6px 10px',borderBottom:'1px solid #f5f3ee'}}>
+                    <span style={{color:'#a8a29e',flexShrink:0}}>○</span>
+                    <div>
+                      <div style={{fontSize:13,color:'#1c1917'}}>{t.title}</div>
+                      {t.notes&&<div style={{fontSize:11,color:'#78716c',marginTop:1}}>{t.notes}</div>}
+                      {t.due&&<div style={{fontSize:11,color:'#f59e0b',marginTop:1}}>{'Due '+fmtDue(t.due)?.label?.replace('Due ','')}</div>}
+                    </div>
+                  </div>
+                ))}
+                {comp.length>0&&(
+                  <div>
+                    <div style={{fontSize:10,color:'#a8a29e',textTransform:'uppercase',letterSpacing:'.6px',margin:'8px 0 4px',paddingLeft:10}}>{'Completed ('+comp.length+')'}</div>
+                    {comp.map(t=>(
+                      <div key={t.id} style={{display:'flex',gap:8,padding:'5px 10px',borderBottom:'1px solid #f5f3ee',opacity:.5}}>
+                        <span style={{color:'#a8a29e'}}>✓</span>
+                        <div style={{fontSize:13,textDecoration:'line-through',color:'#1c1917'}}>{t.title}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
+
         <div style={{marginTop:28,paddingTop:10,borderTop:'1px solid #ede9e3',fontSize:11,color:'#a8a29e',textAlign:'center'}}>
           Generated by Momentum
         </div>
@@ -693,14 +686,10 @@ function ExportOverlay({data, onClose}) {
 
 // ── Root App ───────────────────────────────────────────────────────────────────
 function App() {
-  const [exportData,setExportData] = useState(null);
+  const [showExport,setShowExport] = useState(false);
   const [screen,setScreen]         = useState(loadId()?'auth':'setup');
 
-  useEffect(()=>{
-    function onExport(e){ setExportData(e.detail); }
-    window.addEventListener('momentum-export', onExport);
-    return ()=>window.removeEventListener('momentum-export', onExport);
-  },[]);
+
   const [clientId,setClientId]     = useState(loadId);
   const [events,setEvents]         = useState([]);
   const [loading,setLoading]       = useState(false);
@@ -751,7 +740,7 @@ function App() {
 
   return (
     <div style={{minHeight:'100vh',background:'#f5f3ee'}}>
-      {exportData && <ExportOverlay data={exportData} onClose={()=>setExportData(null)}/>}
+      {showExport && <ExportOverlay events={events} tasks={tasks} onClose={()=>setShowExport(false)}/>}
       <div style={{background:'#fff',borderBottom:'1px solid #ede9e3',padding:'0 26px',height:54,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',gap:11}}>
           <div style={{width:29,height:29,borderRadius:8,background:'linear-gradient(135deg,#1c1917,#44403c)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,color:'#fafaf7'}}>◈</div>
@@ -763,7 +752,7 @@ function App() {
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:9}}>
-          <button onClick={()=>generatePrint(events,tasks)} style={{padding:'4px 12px',borderRadius:16,border:'1px solid #ede9e3',background:'#fff',color:'#78716c',fontSize:12,cursor:'pointer'}}>Export</button>
+          <button onClick={()=>setShowExport(true)} style={{padding:'4px 12px',borderRadius:16,border:'1px solid #ede9e3',background:'#fff',color:'#78716c',fontSize:12,cursor:'pointer'}}>Export</button>
           <button onClick={resetClientId} style={{fontSize:11,color:'#a8a29e',background:'none',border:'none',cursor:'pointer',textDecoration:'underline'}}>Sign out</button>
         </div>
       </div>
