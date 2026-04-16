@@ -1,56 +1,16 @@
-<!DOCTYPE html>
-
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Momentum — Calendar + Tasks</title>
-<script src="https://accounts.google.com/gsi/client"></script>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; background: #f5f3ee; font-family: 'Outfit', sans-serif; color: #1c1917; }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes spin   { to { transform: rotate(360deg); } }
-  .fade            { animation: fadeUp .2s ease both; }
-  .ev-card         { transition: transform .15s, box-shadow .15s; }
-  .ev-card:hover   { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,.09) !important; }
-  .trow            { transition: background .1s; }
-  .trow:hover      { background: #faf8f4 !important; }
-  .trow:hover .del { opacity: 1 !important; }
-  button, input, textarea { font-family: 'Outfit', sans-serif; }
-  input:focus, textarea:focus { outline: none; }
-  ::-webkit-scrollbar       { width: 4px; }
-  ::-webkit-scrollbar-thumb { background: #d6d0c6; border-radius: 2px; }
-  .step-num   { width:28px; height:28px; border-radius:50%; background:#1c1917; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; flex-shrink:0; }
-  .code-block { background:#1c1917; color:#6ee7b7; border-radius:10px; padding:10px 14px; font-family:monospace; font-size:13px; }
-  .spinner    { width:22px; height:22px; border:2.5px solid #ede9e3; border-top-color:#1c1917; border-radius:50%; animation:spin .7s linear infinite; }
-</style>
-</head>
-<body>
-<div id="root"></div>
-
-<!-- generatePrint: plain JS only — no Babel, no template literal nesting issues -->
-
 <script>
 function generatePrint(events, tasks) {
   var now = new Date();
   var dateStr = now.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-
-  var CAT_COLORS = { travel:'#0ea5e9', work:'#8b5cf6', health:'#10b981', social:'#f59e0b', personal:'#ec4899' };
-  var LIST_META  = {
-    personal:   {label:'Personal',         icon:'👤', color:'#f59e0b'},
-    kids:       {label:'Kids',             icon:'🧒', color:'#10b981'},
-    christmas:  {label:'Christmas Wonder', icon:'🎄', color:'#ef4444'},
-    property:   {label:'Property',         icon:'🏡', color:'#0ea5e9'},
-    investment: {label:'Investment',       icon:'📈', color:'#8b5cf6'},
-    work:       {label:'Work',             icon:'💼', color:'#64748b'},
+  var CAT_COLORS = {travel:'#0ea5e9',work:'#8b5cf6',health:'#10b981',social:'#f59e0b',personal:'#ec4899'};
+  var LIST_META = {
+    personal:  {label:'Personal',         icon:'👤', color:'#f59e0b'},
+    kids:      {label:'Kids',             icon:'🧒', color:'#10b981'},
+    christmas: {label:'Christmas Wonder', icon:'🎄', color:'#ef4444'},
+    property:  {label:'Property',         icon:'🏡', color:'#0ea5e9'},
+    investment:{label:'Investment',       icon:'📈', color:'#8b5cf6'},
+    work:      {label:'Work',             icon:'💼', color:'#64748b'},
   };
-
   function fmtT(iso) {
     if (!iso || iso.length===10) return '';
     try { return new Date(iso).toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit',hour12:true}); } catch(e){ return ''; }
@@ -58,104 +18,62 @@ function generatePrint(events, tasks) {
   function fmtD(iso) {
     try { return new Date(iso+'T12:00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}); } catch(e){ return iso; }
   }
-  function dKey(iso) { return iso.length===10 ? iso : iso.slice(0,10); }
+  function dKey(iso) { return (iso||'').length===10 ? iso : (iso||'').slice(0,10); }
 
-  // Build events HTML
+  // Events HTML
   var grouped = {};
-  (events||[]).forEach(function(ev){
-    var k=dKey(ev.start); if(!grouped[k]) grouped[k]=[]; grouped[k].push(ev);
-  });
+  (events||[]).forEach(function(ev){ var k=dKey(ev.start); if(!grouped[k])grouped[k]=[]; grouped[k].push(ev); });
   var sortedDates = Object.keys(grouped).sort();
   var evHTML = '';
-  if (sortedDates.length===0) {
-    evHTML = '<p style="color:#888;font-style:italic">No upcoming events.</p>';
+  if (!sortedDates.length) {
+    evHTML = '<p style="color:#999;font-style:italic;padding:8px 0">No upcoming events.</p>';
   } else {
     sortedDates.forEach(function(d){
-      evHTML += '<div class="db"><div class="dh">'+fmtD(d)+'</div>';
+      evHTML += '<div style="margin-bottom:14px"><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#78716c;margin-bottom:6px">'+fmtD(d)+'</div>';
       grouped[d].forEach(function(ev){
         var col  = CAT_COLORS[ev.cat]||'#78716c';
         var time = ev.allDay ? 'All day' : (fmtT(ev.start)+(fmtT(ev.end)?' to '+fmtT(ev.end):''));
-        evHTML += '<div class="er"><div class="eb" style="background:'+col+'"></div>';
-        evHTML += '<div class="ebody"><div class="et">'+ev.title+'</div>';
-        if (ev.location) evHTML += '<div class="em">'+ev.location+'</div>';
-        evHTML += '</div><div class="etime">'+time+'</div></div>';
+        evHTML += '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #ede9e3;border-radius:7px;margin-bottom:5px;background:#fafaf7">';
+        evHTML += '<div style="width:4px;min-width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
+        evHTML += '<div style="flex:1"><div style="font-size:13px;font-weight:500">'+ev.title+'</div>';
+        if (ev.location) evHTML += '<div style="font-size:11px;color:#78716c;margin-top:1px">'+ev.location+'</div>';
+        evHTML += '</div><div style="font-size:11px;color:#78716c;text-align:right">'+time+'</div></div>';
       });
       evHTML += '</div>';
     });
   }
 
-  // Build tasks HTML
+  // Tasks HTML
   var taskHTML = '';
-  var listIds  = ['personal','kids','christmas','property','investment','work'];
-  listIds.forEach(function(lid){
+  ['personal','kids','christmas','property','investment','work'].forEach(function(lid){
     var m    = LIST_META[lid];
     var pend = (tasks||[]).filter(function(t){return t.list===lid&&!t.done;});
     var comp = (tasks||[]).filter(function(t){return t.list===lid&&t.done;});
     if (!pend.length && !comp.length) return;
-    taskHTML += '<div class="lb"><div class="lh" style="border-left:4px solid '+m.color+'">'+m.icon+' '+m.label+'<span class="lc">'+pend.length+' pending</span></div>';
+    taskHTML += '<div style="margin-bottom:16px">';
+    taskHTML += '<div style="font-size:14px;font-weight:600;padding:5px 10px;background:#f5f3ee;border-left:4px solid '+m.color+';border-radius:0 7px 7px 0;margin-bottom:6px;display:flex;justify-content:space-between">';
+    taskHTML += '<span>'+m.icon+' '+m.label+'</span><span style="font-size:11px;font-weight:400;color:#78716c">'+pend.length+' pending</span></div>';
     pend.forEach(function(t){
-      taskHTML += '<div class="tr"><span class="chk">○</span><div><div class="tt">'+t.title+'</div>';
-      if (t.notes) taskHTML += '<div class="tn">'+t.notes+'</div>';
-      if (t.due)   taskHTML += '<div class="td">Due '+new Date(t.due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+'</div>';
+      taskHTML += '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-bottom:1px solid #f5f3ee">';
+      taskHTML += '<span style="color:#a8a29e;flex-shrink:0">○</span><div>';
+      taskHTML += '<div style="font-size:13px">'+t.title+'</div>';
+      if (t.notes) taskHTML += '<div style="font-size:11px;color:#78716c;margin-top:1px">'+t.notes+'</div>';
+      if (t.due)   taskHTML += '<div style="font-size:11px;color:#f59e0b;margin-top:1px">Due '+new Date(t.due+'T12:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+'</div>';
       taskHTML += '</div></div>';
     });
     if (comp.length) {
-      taskHTML += '<div class="donehdg">Completed ('+comp.length+')</div>';
+      taskHTML += '<div style="font-size:10px;color:#a8a29e;text-transform:uppercase;letter-spacing:.6px;margin:8px 0 4px;padding-left:10px">Completed ('+comp.length+')</div>';
       comp.forEach(function(t){
-        taskHTML += '<div class="tr done"><span class="chk">✓</span><div class="tt">'+t.title+'</div></div>';
+        taskHTML += '<div style="display:flex;gap:8px;padding:5px 10px;border-bottom:1px solid #f5f3ee;opacity:.5">';
+        taskHTML += '<span style="color:#a8a29e">✓</span><div style="font-size:13px;text-decoration:line-through">'+t.title+'</div></div>';
       });
     }
     taskHTML += '</div>';
   });
-  if (!taskHTML) taskHTML = '<p style="color:#888;font-style:italic">No tasks yet.</p>';
+  if (!taskHTML) taskHTML = '<p style="color:#999;font-style:italic;padding:8px 0">No tasks yet.</p>';
 
-  // CSS string (no template literals)
-  var css = [
-    '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}',
-    'body{font-family:Outfit,sans-serif;color:#1c1917;background:#fff;padding:32px 40px;max-width:780px;margin:0 auto}',
-    '.hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #1c1917;margin-bottom:26px}',
-    '.logo{font-family:"Cormorant Garamond",serif;font-size:24px;font-weight:700}',
-    '.dt{font-size:12px;color:#78716c}',
-    '.stitle{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:700;margin-bottom:12px;padding-bottom:5px;border-bottom:1px solid #ede9e3}',
-    '.sec{margin-bottom:28px}',
-    '.db{margin-bottom:16px}',
-    '.dh{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#78716c;margin-bottom:6px}',
-    '.er{display:flex;align-items:center;gap:9px;padding:7px 10px;border:1px solid #ede9e3;border-radius:7px;margin-bottom:5px;background:#fafaf7}',
-    '.eb{width:4px;min-width:4px;height:28px;border-radius:2px}',
-    '.ebody{flex:1}.et{font-size:13px;font-weight:500}.em{font-size:11px;color:#78716c;margin-top:1px}',
-    '.etime{font-size:11px;color:#78716c;flex-shrink:0;text-align:right}',
-    '.lb{margin-bottom:18px}',
-    '.lh{font-size:14px;font-weight:600;padding:5px 10px;background:#f5f3ee;border-radius:0 7px 7px 0;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}',
-    '.lc{font-size:11px;font-weight:400;color:#78716c}',
-    '.tr{display:flex;align-items:flex-start;gap:9px;padding:6px 10px;border-bottom:1px solid #f5f3ee}',
-    '.tr.done{opacity:.5}.tr.done .tt{text-decoration:line-through}',
-    '.chk{font-size:13px;color:#a8a29e;flex-shrink:0;width:16px}',
-    '.tt{font-size:13px;color:#1c1917}.tn{font-size:11px;color:#78716c;margin-top:2px}.td{font-size:11px;color:#f59e0b;margin-top:2px}',
-    '.donehdg{font-size:10px;color:#a8a29e;text-transform:uppercase;letter-spacing:.6px;margin:8px 0 5px;padding-left:10px}',
-    '.footer{margin-top:32px;padding-top:12px;border-top:1px solid #ede9e3;font-size:11px;color:#a8a29e;text-align:center}',
-    '.btn{padding:9px 20px;border-radius:8px;font-size:13px;cursor:pointer;font-family:Outfit,sans-serif}',
-    '@media print{.noprint{display:none!important}.db,.lb{break-inside:avoid}}'
-  ].join('');
-
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
-    + '<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@400;500&display=swap" rel="stylesheet">'
-    + '<style>'+css+'</style></head><body>'
-
-```
-+ '<div class="hdr"><div class="logo">Momentum</div><div class="dt">'+dateStr+'</div></div>'
-+ '<div class="noprint" style="margin-bottom:18px;display:flex;gap:10px">'
-+ '<button class="btn" onclick="window.print()" style="background:#1c1917;color:#fff;border:none">Print / Save as PDF</button>'
-+ '<button class="btn" onclick="window.close()" style="background:#f5f3ee;color:#78716c;border:1px solid #ede9e3">Close</button>'
-+ '</div>'
-+ '<div class="sec"><div class="stitle">Calendar Events</div>'+evHTML+'</div>'
-+ '<div class="sec"><div class="stitle">Tasks</div>'+taskHTML+'</div>'
-+ '<div class="footer">Generated by Momentum</div>'
-+ '</body></html>';
-```
-
-var win = window.open(’’, ‘_blank’);
-if (win) { win.document.write(html); win.document.close(); }
-else     { alert(‘Allow pop-ups for this site to use Export.’); }
+  // Fire custom event — React app shows an in-app overlay (no popup blocker issues)
+  window.dispatchEvent(new CustomEvent('momentum-export', {detail:{dateStr:dateStr, evHTML:evHTML, taskHTML:taskHTML}}));
 }
 </script>
 
@@ -726,9 +644,63 @@ function TaskSidebar({tasks,activeList,setActiveList}) {
   );
 }
 
+// ── Export Overlay ─────────────────────────────────────────────────────────────
+function ExportOverlay({data, onClose}) {
+  useEffect(()=>{
+    document.body.style.overflow='hidden';
+    return ()=>{ document.body.style.overflow=''; };
+  },[]);
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',zIndex:200,display:'flex',flexDirection:'column'}}
+      onClick={onClose}>
+      <div style={{background:'#fff',margin:'0',flex:1,overflowY:'auto',maxWidth:760,width:'100%',alignSelf:'center',padding:'24px 24px 40px'}}
+        onClick={e=>e.stopPropagation()}>
+        {/* Header */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',paddingBottom:14,borderBottom:'2px solid #1c1917',marginBottom:22}}>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700}}>Momentum</div>
+          <div style={{fontSize:11,color:'#78716c'}}>{data.dateStr}</div>
+        </div>
+        {/* Print / Close buttons */}
+        <div style={{display:'flex',gap:9,marginBottom:20}}>
+          <button onClick={()=>window.print()} style={{padding:'8px 18px',borderRadius:8,border:'none',background:'#1c1917',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}}>
+            Print / Save as PDF
+          </button>
+          <button onClick={onClose} style={{padding:'8px 14px',borderRadius:8,border:'1px solid #ede9e3',background:'#f5f3ee',color:'#78716c',fontSize:13,cursor:'pointer'}}>
+            Close
+          </button>
+        </div>
+        {/* Events */}
+        <div style={{marginBottom:26}}>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:700,marginBottom:10,paddingBottom:5,borderBottom:'1px solid #ede9e3'}}>
+            Calendar Events
+          </div>
+          <div dangerouslySetInnerHTML={{__html:data.evHTML}}/>
+        </div>
+        {/* Tasks */}
+        <div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:700,marginBottom:10,paddingBottom:5,borderBottom:'1px solid #ede9e3'}}>
+            Tasks
+          </div>
+          <div dangerouslySetInnerHTML={{__html:data.taskHTML}}/>
+        </div>
+        <div style={{marginTop:28,paddingTop:10,borderTop:'1px solid #ede9e3',fontSize:11,color:'#a8a29e',textAlign:'center'}}>
+          Generated by Momentum
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Root App ───────────────────────────────────────────────────────────────────
 function App() {
+  const [exportData,setExportData] = useState(null);
   const [screen,setScreen]         = useState(loadId()?'auth':'setup');
+
+  useEffect(()=>{
+    function onExport(e){ setExportData(e.detail); }
+    window.addEventListener('momentum-export', onExport);
+    return ()=>window.removeEventListener('momentum-export', onExport);
+  },[]);
   const [clientId,setClientId]     = useState(loadId);
   const [events,setEvents]         = useState([]);
   const [loading,setLoading]       = useState(false);
@@ -779,6 +751,7 @@ function App() {
 
   return (
     <div style={{minHeight:'100vh',background:'#f5f3ee'}}>
+      {exportData && <ExportOverlay data={exportData} onClose={()=>setExportData(null)}/>}
       <div style={{background:'#fff',borderBottom:'1px solid #ede9e3',padding:'0 26px',height:54,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:10}}>
         <div style={{display:'flex',alignItems:'center',gap:11}}>
           <div style={{width:29,height:29,borderRadius:8,background:'linear-gradient(135deg,#1c1917,#44403c)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,color:'#fafaf7'}}>◈</div>
