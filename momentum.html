@@ -137,7 +137,7 @@ input:focus,textarea:focus{outline:none}
   <div class="np" style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:2px solid #1c1917;margin-bottom:14px">
     <span style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700">Momentum</span>
     <div style="display:flex;gap:6px">
-      <button onclick="window.print()" style="padding:5px 11px;border-radius:6px;border:none;background:#1c1917;color:#fff;font-size:12px;cursor:pointer">Print</button>
+      <button onclick="doPrint()" style="padding:5px 11px;border-radius:6px;border:none;background:#1c1917;color:#fff;font-size:12px;cursor:pointer">Print / Save PDF</button>
       <button onclick="document.getElementById('eo').className=''" style="padding:5px 9px;border-radius:6px;border:1px solid #ede9e3;background:#f5f3ee;color:#78716c;font-size:12px;cursor:pointer">Close</button>
     </div>
   </div>
@@ -168,7 +168,17 @@ function fw(evs,o){var r=wr(o);return evs.filter(function(ev){try{var i=ev.start
 function gl(id){for(var i=0;i<LISTS.length;i++)if(LISTS[i].id===id)return LISTS[i];return LISTS[0];}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function uid(){return 't'+Date.now()+Math.random().toString(36).slice(2);}
-function lt(){try{return JSON.parse(localStorage.getItem('mmt')||'[]');}catch(e){return[];}}
+function lt(){
+  try{
+    // Try new key first
+    var v=localStorage.getItem('mmt');
+    if(v&&v!=='[]'){return JSON.parse(v);}
+    // Fall back to old key from previous app version
+    var old=localStorage.getItem('momentum_tasks');
+    if(old&&old!=='[]'){var t=JSON.parse(old);localStorage.setItem('mmt',old);return t;}
+    return[];
+  }catch(e){return[];}
+}
 function sv(){try{localStorage.setItem('mmt',JSON.stringify(S.tasks));}catch(e){}}
 function saveTz(tz){try{localStorage.setItem('mcaltz',tz);}catch(e){}}
 function loadTz(){try{return localStorage.getItem('mcaltz')||'Australia/Sydney';}catch(e){return 'Australia/Sydney';}}
@@ -344,6 +354,17 @@ function sa(){var t=(document.getElementById('ai').value||'').trim();if(!t)retur
 function setTab(tab){S.tab=tab;document.getElementById('vcal').style.display=tab==='cal'?'block':'none';document.getElementById('vtasks').style.display=tab==='tasks'?'block':'none';document.getElementById('tc').className='nt'+(tab==='cal'?' on':'');document.getElementById('tt').className='nt'+(tab==='tasks'?' on':'');if(tab==='tasks')rt();}
 
 // EXPORT
+function doPrint(){
+  var ei=document.getElementById('ei');
+  var w=window.open('','_blank');
+  if(!w){window.print();return;}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Momentum Export</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Outfit,Georgia,sans-serif;color:#1c1917;padding:20px;max-width:780px;margin:0 auto}.pb-avoid{page-break-inside:avoid}@media print{body{padding:10px}button{display:none!important}}</style></head><body>');
+  w.document.write(ei.innerHTML);
+  w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(function(){w.print();},500);
+}
+
 function showExp(){
   var ds=new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),gr={};
   S.events.forEach(function(ev){var k=dk(ev.start);if(!gr[k])gr[k]=[];gr[k].push(ev);});
@@ -352,6 +373,8 @@ function showExp(){
   if(!sd.length)h+='<p style="color:#999;font-style:italic;font-size:13px">No events.</p>';
   else sd.forEach(function(d){h+='<div class="pb-avoid" style="margin-bottom:11px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#78716c;margin-bottom:3px">'+esc(fdf(d))+'</div>';gr[d].forEach(function(ev){var c=CAT[ev.cat]||CAT.personal,t1=ft(ev.start),t2=ft(ev.end),ts=ev.allDay?'All day':(t1+(t2?' – '+t2:''));h+='<div style="display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid #ede9e3;border-radius:5px;margin-bottom:3px;background:#fafaf7"><div style="width:3px;height:20px;border-radius:2px;background:'+c.color+';flex-shrink:0"></div><div style="flex:1"><div style="font-size:12px;font-weight:500">'+esc(ev.title)+'</div>'+(ev.location?'<div style="font-size:10px;color:#78716c">'+esc(ev.location)+'</div>':'')+'</div><div style="font-size:11px;color:#78716c">'+esc(ts)+'</div></div>';});h+='</div>';});
   h+='<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-weight:700;margin-bottom:9px;padding-bottom:3px;border-bottom:1px solid #ede9e3;margin-top:10px">Tasks</div>';
+  var anyTasks=S.tasks.filter(function(t){return !t.done;}).length;
+  if(!anyTasks){h+='<p style="color:#999;font-style:italic;font-size:13px">No pending tasks.</p>';}
   LISTS.forEach(function(list){
     var pend=S.tasks.filter(function(t){return t.list===list.id&&!t.done;});
     if(!pend.length)return; // Only show lists with pending tasks
