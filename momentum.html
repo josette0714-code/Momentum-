@@ -78,7 +78,13 @@ input:focus,textarea:focus{outline:none}
   .tsc{position:sticky;top:60px}
 }
 @media(max-width:679px){.csc,.tsc{display:none}}
-@media print{#nav,.np{display:none!important}}
+@media print{
+  body{background:#fff!important}
+  #nav,#vcal,#vtasks,#banner,.np{display:none!important}
+  #eo{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;background:#fff!important;overflow:visible!important;display:block!important;z-index:1!important}
+  #ei{max-width:100%!important;width:100%!important;min-height:auto!important;padding:12px 16px!important}
+  .pb-avoid{page-break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -344,9 +350,26 @@ function showExp(){
   var sd=Object.keys(gr).sort(),h='<div style="font-size:11px;color:#78716c;margin-bottom:12px">'+esc(ds)+'</div>';
   h+='<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-weight:700;margin-bottom:9px;padding-bottom:3px;border-bottom:1px solid #ede9e3">Calendar Events</div>';
   if(!sd.length)h+='<p style="color:#999;font-style:italic;font-size:13px">No events.</p>';
-  else sd.forEach(function(d){h+='<div style="margin-bottom:11px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#78716c;margin-bottom:3px">'+esc(fdf(d))+'</div>';gr[d].forEach(function(ev){var c=CAT[ev.cat]||CAT.personal,t1=ft(ev.start),t2=ft(ev.end),ts=ev.allDay?'All day':(t1+(t2?' – '+t2:''));h+='<div style="display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid #ede9e3;border-radius:5px;margin-bottom:3px;background:#fafaf7"><div style="width:3px;height:20px;border-radius:2px;background:'+c.color+';flex-shrink:0"></div><div style="flex:1"><div style="font-size:12px;font-weight:500">'+esc(ev.title)+'</div>'+(ev.location?'<div style="font-size:10px;color:#78716c">'+esc(ev.location)+'</div>':'')+'</div><div style="font-size:11px;color:#78716c">'+esc(ts)+'</div></div>';});h+='</div>';});
+  else sd.forEach(function(d){h+='<div class="pb-avoid" style="margin-bottom:11px"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#78716c;margin-bottom:3px">'+esc(fdf(d))+'</div>';gr[d].forEach(function(ev){var c=CAT[ev.cat]||CAT.personal,t1=ft(ev.start),t2=ft(ev.end),ts=ev.allDay?'All day':(t1+(t2?' – '+t2:''));h+='<div style="display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid #ede9e3;border-radius:5px;margin-bottom:3px;background:#fafaf7"><div style="width:3px;height:20px;border-radius:2px;background:'+c.color+';flex-shrink:0"></div><div style="flex:1"><div style="font-size:12px;font-weight:500">'+esc(ev.title)+'</div>'+(ev.location?'<div style="font-size:10px;color:#78716c">'+esc(ev.location)+'</div>':'')+'</div><div style="font-size:11px;color:#78716c">'+esc(ts)+'</div></div>';});h+='</div>';});
   h+='<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-weight:700;margin-bottom:9px;padding-bottom:3px;border-bottom:1px solid #ede9e3;margin-top:10px">Tasks</div>';
-  LISTS.forEach(function(list){var pend=S.tasks.filter(function(t){return t.list===list.id&&!t.done;}),comp=S.tasks.filter(function(t){return t.list===list.id&&t.done;});if(!pend.length&&!comp.length)return;h+='<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;padding:4px 7px;background:#f5f3ee;border-left:3px solid '+list.color+';border-radius:0 5px 5px 0;margin-bottom:4px;display:flex;justify-content:space-between"><span>'+list.icon+' '+esc(list.label)+'</span><span style="font-size:11px;font-weight:400;color:#78716c">'+pend.length+' pending</span></div>';pend.forEach(function(t){var du=fdu(t.due);h+='<div style="display:flex;gap:6px;padding:4px 7px;border-bottom:1px solid #f5f3ee"><span style="color:#a8a29e">○</span><div><div style="font-size:12px">'+esc(t.title)+'</div>'+(t.notes?'<div style="font-size:11px;color:#78716c">'+esc(t.notes)+'</div>':'')+(du?'<div style="font-size:11px;color:'+du.c+'">'+du.l+'</div>':'')+'</div></div>';});if(comp.length){h+='<div style="font-size:9px;color:#a8a29e;text-transform:uppercase;margin:4px 0 2px;padding-left:7px">Done ('+comp.length+')</div>';comp.forEach(function(t){h+='<div style="display:flex;gap:6px;padding:4px 7px;border-bottom:1px solid #f5f3ee;opacity:.5"><span style="color:#a8a29e">✓</span><div style="font-size:12px;text-decoration:line-through">'+esc(t.title)+'</div></div>';});}h+='</div>';});
+  LISTS.forEach(function(list){
+    var pend=S.tasks.filter(function(t){return t.list===list.id&&!t.done;});
+    if(!pend.length)return; // Only show lists with pending tasks
+    h+='<div class="pb-avoid" style="margin-bottom:14px">';
+    h+='<div style="font-size:12px;font-weight:600;padding:4px 7px;background:#f5f3ee;border-left:3px solid '+list.color+';border-radius:0 5px 5px 0;margin-bottom:4px;display:flex;justify-content:space-between">';
+    h+='<span>'+list.icon+' '+esc(list.label)+'</span>';
+    h+='<span style="font-size:11px;font-weight:400;color:#78716c">'+pend.length+' pending</span></div>';
+    pend.forEach(function(t){
+      var du=fdu(t.due);
+      h+='<div style="display:flex;gap:6px;padding:5px 7px;border-bottom:1px solid #f5f3ee">';
+      h+='<span style="color:#a8a29e;flex-shrink:0">○</span>';
+      h+='<div style="flex:1"><div style="font-size:12px">'+esc(t.title)+'</div>';
+      if(t.notes)h+='<div style="font-size:11px;color:#78716c">'+esc(t.notes)+'</div>';
+      if(du)h+='<div style="font-size:11px;color:'+du.c+'">'+du.l+'</div>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+  });
   h+='<div style="margin-top:16px;padding-top:8px;border-top:1px solid #ede9e3;font-size:11px;color:#a8a29e;text-align:center">Momentum · '+esc(ds)+'</div>';
   document.getElementById('ec').innerHTML=h;
   document.getElementById('eo').className='open';
